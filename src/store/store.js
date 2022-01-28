@@ -6,56 +6,63 @@ Vue.use(Vuex);
 
 const store = new Vuex.Store({
   state: {
-    selectedYear: 2006,
     selectedStates: [],
-    educationRates: [],
-    personalIncome: [],
+    // create god object instead with keys for those arrays
+    casesPerMillion: [],
+    icuPerMillion: [],
+    colorMap: new Map(),
   },
+
   mutations: {
-    changeSelectedYear (state, year) {
-      state.selectedYear = year;
+    changeSelectedStates(state, states) {
+      state.selectedStates = states;
     },
-    changeSelectedState(state, val) {
-      state.selectedStates.push(val);
-    }   
+    flipStateSelection(state, stateName) {
+      state.selectedStates.includes(stateName) ?
+        // remove element if in array
+        state.selectedStates.splice(state.selectedStates.indexOf(stateName), 1) :
+        // add element if not in array
+        state.selectedStates.push(stateName);
+    },
+    clearStateSelection(state) {
+      state.selectedStates = []
+    },
+    setColorMap(state, colorMap) {
+      state.colorMap = colorMap;
+    }
   },
+
   getters: {
-    selectedYear: (state) => state.selectedYear,
     selectedStates: (state) => state.selectedStates,
-    educationRates (state) {
-      let result = [];
-      for (let i = 0; i < state.educationRates.length; i++) {
-        if (state.selectedYear in state.educationRates[i]) {
-          result.push({
-            state: state.educationRates[i].State,
-            value: +state.educationRates[i][state.selectedYear]
-          })
-        }
-      }
-      return result;
-    },
-    personalIncome (state) {
-      let result = [];
-      for (let i = 0; i < state.personalIncome.length; i++) {
-        if (state.selectedYear in state.personalIncome[i]) {
-          result.push({
-            state: state.personalIncome[i].State,
-            value: state.personalIncome[i][state.selectedYear]
-          })
-        }
-      }
-      return result;
-    },
+    colorMap: (state) => state.colorMap,
+    casesPerMillion: (state) => state.casesPerMillion,
+    icuPerMillion: (state) => state.icuPerMillion,
   },
+
   actions: {
-    loadData({state}) {
-      d3.csv('./usa_ba-degree-or-higher_2006-2019.csv').then((data) => { 
-        state.educationRates = data;
+    loadData({ state }) {
+
+      d3.csv('./owid-covid-latest.csv').then((data) => {
+        const filteredData = data.filter(data => data.continent == 'Europe');
+
+        // load cases per million into state
+        for (let i = 0; i < filteredData.length; i++) {
+          state.casesPerMillion.push({
+            state: filteredData[i].location,
+            value: +filteredData[i].total_cases_per_million
+          })
+        }
+
+        // load icu data into state
+        for (let i = 0; i < filteredData.length; i++) {
+          state.icuPerMillion.push({
+            state: filteredData[i].location,
+            value: +filteredData[i].icu_patients_per_million
+          })
+        }
+
       })
 
-      d3.csv('./usa_personal-income-by-state_2006-2019.csv').then((data) => { 
-        state.personalIncome = data;
-      })
     },
   }
 })
