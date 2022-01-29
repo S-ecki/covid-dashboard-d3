@@ -3,18 +3,18 @@
     <div class="container-fluid">
       <div class="row">
         <div class="col-md-6">
-          <Dropdown />
+          <Scatterplot />
         </div>
         <div class="col-md-6">
-          <ChoroplethMap />
+          <Dropdown />
         </div>
       </div>
       <div class="row">
         <div class="col-md-6">
-          <BarChart />
+          <ChoroplethMap />
         </div>
         <div class="col-md-6">
-          <ChoroplethMap />
+          <BarChart />
         </div>
       </div>
     </div>
@@ -25,6 +25,7 @@
 import BarChart from "./components/BarChart.vue";
 import ChoroplethMap from "./components/ChoroplethMap.vue";
 import Dropdown from "./components/Dropdown.vue";
+import Scatterplot from "./components/Scatterplot.vue";
 
 export default {
   name: "App",
@@ -32,6 +33,7 @@ export default {
     BarChart,
     ChoroplethMap,
     Dropdown,
+    Scatterplot,
   },
   mounted() {
     this.$store.dispatch("loadData");

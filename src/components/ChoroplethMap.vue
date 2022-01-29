@@ -56,19 +56,19 @@ export default {
       d3.select(this.$refs.map)
         .selectAll("path")
         .data(mapStatesEurope.features)
+        .attr("id", (d) => d.properties.name)
         .join("path")
         .attr("d", path)
         .attr("stroke", (d) => {
-          if (this.covidData.length == 0) return "white";
+          if (this.covidData.length == 0) return "transparent";
 
           const county = this.covidData.filter(
             (c) => c.state === d.properties.name
           )[0];
 
-          return county.icuIncomplete ? "white" : "black"; // maybe just white
+          return county.icuIncomplete ? "white" : "white"; // maybe black
         })
-        .attr("stroke-width", "0.5")
-        .attr("fill", "white")
+        .attr("stroke-width", "0.3")
         .attr("fill", (d) => {
           if (this.selectedState == "") {
             return this.colorMap.get(d.properties.name);
@@ -76,7 +76,7 @@ export default {
           if (this.selectedState == d.properties.name) {
             return this.colorMap.get(d.properties.name);
           } else {
-            return "grey";
+            return "#d3d3d3";
           }
         })
         .on("click", (_, d) => {
@@ -84,6 +84,15 @@ export default {
         })
         .on("mouseover", this.showTooltip)
         .on("mouseout", this.hideTooltip);
+
+      // todo fix this
+      const incompleteStates = this.covidData
+        .filter((d) => d.icuIncomplete)
+        .map((d) => d.state);
+
+      for (var state of incompleteStates) {
+        d3.select(`#${state}`).remove();
+      }
     },
     getGeopath() {
       return d3.geoPath().projection(this.getProjection());
@@ -146,7 +155,7 @@ export default {
 
       for (let datapoint of this.covidData) {
         const color = datapoint.icuIncomplete
-          ? "white"
+          ? "transparent"
           : this.getColorForDatapoint(datapoint.cases, datapoint.icu);
         colorMap.set(datapoint.state, color);
       }

@@ -2,7 +2,7 @@
 // https://observablehq.com/@benjaminadk/bivariate-choropleth-color-generator
 const bivariate_colors =
     [
-        ["#0075ac", "#70a7c1", "#d3d3d3"],
+        ["#0075ac", "#70a7c1", "#808000"],
         ["#004e8d", "#746f9e", "#da8cad"],
         ["#00004f", "#7b0058", "#e80060"],
     ]

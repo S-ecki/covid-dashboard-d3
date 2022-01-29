@@ -4,10 +4,10 @@
     <div>
       some header
       <div class="info-text" v-if="cases != -1">
-        Infections per Million: {{ cases == 0 ? "No data" : cases }}
+        Infections per Million: {{ cases == 0 ? "No data" : cases.toFixed(0) }}
       </div>
       <div class="info-text" v-if="icu != -1">
-        ICU per Million: {{ icu == 0 ? "No data" : icu }}
+        ICU per Million: {{ icu == 0 ? "No data" : icu.toFixed(1) }}
       </div>
     </div>
     <div class="bar-chart">
@@ -95,7 +95,12 @@ export default {
         .text("Risk Factor normalized");
     },
     drawBars() {
-      if (this.selectedState == "") return; // todo ?
+      const barsGroup = d3.select(this.$refs.barsGroup);
+      barsGroup.selectAll(".bar-label").remove();
+      barsGroup.selectAll(".bar").remove();
+      if (this.selectedState == "") {
+        return;
+      }
 
       const countryData = this.covidDataByCountry(this.selectedState);
       let color = this.colorMap.get(this.selectedState);
@@ -108,7 +113,6 @@ export default {
         { name: "development", value: countryData.development_index_inverse },
       ];
 
-      const barsGroup = d3.select(this.$refs.barsGroup);
       barsGroup
         .selectAll(".bar")
         .data(filteredData)
@@ -126,8 +130,6 @@ export default {
             this.svgPadding.bottom -
             this.yScale(d.value)
         );
-
-      barsGroup.selectAll(".bar-label").remove();
 
       // https://stackoverflow.com/questions/42491106/add-labels-to-bar-chart-d3
       barsGroup
