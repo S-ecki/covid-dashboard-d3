@@ -10,6 +10,8 @@
 <script>
 import mapStatesEurope from "@/assets/europe-states-geo.json";
 import * as d3 from "d3";
+import { mapGetters } from "vuex";
+import bivariate_colors from "../helpers/bivariate_colors.js";
 
 export default {
   name: "ChoroplethMap",
@@ -29,6 +31,8 @@ export default {
 
   mounted() {
     this.drawVis();
+    this.initTooltip();
+    // this.fillColorMap();
   },
 
   methods: {
@@ -49,30 +53,35 @@ export default {
     drawMap() {
       const path = this.getGeopath();
 
-      // const colorMap = this.$store.state.colorMap;
-
       d3.select(this.$refs.map)
         .selectAll("path")
         .data(mapStatesEurope.features)
-
         .join("path")
         .attr("d", path)
-        .attr("stroke", "black")
+        .attr("stroke", (d) => {
+          const county = this.covidData.filter(
+            (c) => c.state === d.properties.name
+          )[0];
+          console.log(county);
+          return county.incomplete ? "white" : "black"; // maybe just white
+        })
         .attr("stroke-width", "0.5")
         .attr("fill", "white")
         .attr("fill", (d) => {
-          // if (!this.selectedStates.length) {
-          //   return colorMap.get(d.properties.name);
-          // }
-          return this.selectedStates.includes(d.properties.name)
-            ? "red" //colorMap.get(d.properties.name)
-            : "white";
+          if (this.selectedState == "") {
+            return this.colorMap.get(d.properties.name);
+          }
+          if (this.selectedState == d.properties.name) {
+            return this.colorMap.get(d.properties.name);
+          } else {
+            return "grey";
+          }
         })
         .on("click", (_, d) => {
-          this.$store.commit("flipStateSelection", d.properties.name);
-        });
-      // .on("mouseover", () => console.log("mouseover"))
-      // .on("mouseout", () => console.log("mouseout"));
+          this.$store.commit("changeSelectedState", d.properties.name);
+        })
+        .on("mouseover", this.showTooltip)
+        .on("mouseout", this.hideTooltip);
     },
     getGeopath() {
       return d3.geoPath().projection(this.getProjection());
@@ -98,21 +107,97 @@ export default {
         .attr("height", this.svgHeight)
         .attr("style", `fill:transparent;`)
         .on("click", () => {
-          console.log("unselecting all - should implement");
-          // this.$store.commit("clearStateSelection");
+          this.$store.commit("clearStateSelection");
         });
+    },
+
+    initTooltip() {
+      d3.select("#mapTooltip").remove();
+      // the idea of how to use tooltips was inspired by this website, but heavily changed to my own needs
+      // https://bl.ocks.org/d3noob/a22c42db65eb00d4e369
+      d3.select("body").append("div").attr("id", "mapTooltip");
+    },
+    showTooltip(event, data) {
+      const stateName = data.properties.name;
+      const casesOfState = this.covidDataByCountry(stateName).cases;
+      const icuOfState = this.covidDataByCountry(stateName).icu;
+
+      // additional styling by css
+      d3
+        .select("#mapTooltip")
+        .style("left", `${event.pageX - 50}px`)
+        .style("top", `${event.pageY + 50}px`)
+        .style("opacity", 1)
+        .style("display", "block").text(`${stateName}
+        cases: ${casesOfState}
+        ICU: ${icuOfState}`);
+    },
+    hideTooltip() {
+      d3.select(`#mapTooltip`).style("opacity", 0).style("display", "none");
+    },
+
+    // this fills up the Map in the store, which saves the colors
+    // each state should be highlighted on the choropleth map when selected
+    // gets called every time eduRate/ persIncome change
+    fillColorMap() {
+      let colorMap = new Map();
+
+      for (let datapoint of this.covidData) {
+        const color = datapoint.incomplete
+          ? "white"
+          : this.getColorForDatapoint(datapoint.cases, datapoint.icu);
+        colorMap.set(datapoint.state, color);
+      }
+      this.$store.commit("setColorMap", colorMap);
+    },
+
+    // returns hex code that the state should be highlighted with
+    getColorForDatapoint(cases, icu) {
+      const x = this.getXColorIndex(cases);
+      const y = this.getYColorIndex(icu);
+      return bivariate_colors[x][y];
+    },
+
+    // determines the x-"index" of the field the datapoint is on
+    // the left column is be 0, middle 1 and right 2
+    getXColorIndex(cases) {
+      const scale = d3.scaleLinear().domain([this.casesMin, this.casesMax]);
+
+      const xColorIndex = Math.floor(scale(cases) * 3);
+      return xColorIndex == 3 ? xColorIndex - 1 : xColorIndex;
+    },
+
+    // determines the y-"index" of the field the datapoint is on
+    // the left row is be 0, middle 1 and right 2
+    getYColorIndex(icu) {
+      const scale = d3.scaleLinear().domain([this.icuMin, this.icuMax]);
+
+      const yColorIndex = 2 - Math.floor(scale(icu) * 3);
+      return yColorIndex == -1 ? 0 : yColorIndex;
     },
   },
   computed: {
-    selectedStates: {
-      get() {
-        return this.$store.getters.selectedStates;
-      },
-    },
+    ...mapGetters([
+      "selectedState",
+      "covidData",
+      "covidDataByCountry",
+      "casesMin",
+      "casesMax",
+      "icuMin",
+      "icuMax",
+      "colorMap",
+    ]),
   },
   watch: {
-    selectedStates: {
+    selectedState: {
       handler() {
+        this.drawVis();
+      },
+      deep: true,
+    },
+    covidData: {
+      handler() {
+        this.fillColorMap();
         this.drawVis();
       },
       deep: true,

@@ -6,63 +6,51 @@ Vue.use(Vuex);
 
 const store = new Vuex.Store({
   state: {
-    selectedStates: [],
-    // create god object instead with keys for those arrays
-    casesPerMillion: [],
-    icuPerMillion: [],
+    selectedState: "",
+    covidData: [],
     colorMap: new Map(),
   },
 
   mutations: {
-    changeSelectedStates(state, states) {
-      state.selectedStates = states;
-    },
-    flipStateSelection(state, stateName) {
-      state.selectedStates.includes(stateName) ?
-        // remove element if in array
-        state.selectedStates.splice(state.selectedStates.indexOf(stateName), 1) :
-        // add element if not in array
-        state.selectedStates.push(stateName);
+    changeSelectedState(state, country) {
+      state.selectedState = country;
     },
     clearStateSelection(state) {
-      state.selectedStates = []
+      state.selectedState = "";
     },
     setColorMap(state, colorMap) {
       state.colorMap = colorMap;
-    }
+    },
+
+
+
   },
 
   getters: {
-    selectedStates: (state) => state.selectedStates,
+    selectedState: (state) => state.selectedState,
     colorMap: (state) => state.colorMap,
-    casesPerMillion: (state) => state.casesPerMillion,
-    icuPerMillion: (state) => state.icuPerMillion,
+    covidData: (state) => state.covidData,
+    covidDataByCountry: (state) => (country) => state.covidData.filter(d => d.state === country)[0],
+    casesMin: (state) => d3.min(state.covidData.filter(d => d.cases != 0), d => d.cases),
+    casesMax: (state) => d3.max(state.covidData.filter(d => d.icu != 0), d => d.cases),
+    icuMin: (state) => d3.min(state.covidData, d => d.icu),
+    icuMax: (state) => d3.max(state.covidData, d => d.icu),
   },
 
   actions: {
     loadData({ state }) {
 
       d3.csv('./owid-covid-latest.csv').then((data) => {
-        const filteredData = data.filter(data => data.continent == 'Europe');
+        const europeData = data.filter(data => data.continent == 'Europe');
 
-        // load cases per million into state
-        for (let i = 0; i < filteredData.length; i++) {
-          state.casesPerMillion.push({
-            state: filteredData[i].location,
-            value: +filteredData[i].total_cases_per_million
-          })
-        }
-
-        // load icu data into state
-        for (let i = 0; i < filteredData.length; i++) {
-          state.icuPerMillion.push({
-            state: filteredData[i].location,
-            value: +filteredData[i].icu_patients_per_million
-          })
-        }
-
-      })
-
+        state.covidData = europeData.map(state => ({
+          state: state.location,
+          cases: +state.total_cases_per_million,
+          icu: +state.icu_patients_per_million,
+          poverty: +state.extreme_poverty,
+          incomplete: state.total_cases_per_million == "" || state.icu_patients_per_million == "",
+        }));
+      });
     },
   }
 })
