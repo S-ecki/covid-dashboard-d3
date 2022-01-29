@@ -59,11 +59,13 @@ export default {
         .join("path")
         .attr("d", path)
         .attr("stroke", (d) => {
+          if (this.covidData.length == 0) return "white";
+
           const county = this.covidData.filter(
             (c) => c.state === d.properties.name
           )[0];
-          console.log(county);
-          return county.incomplete ? "white" : "black"; // maybe just white
+
+          return county.icuIncomplete ? "white" : "black"; // maybe just white
         })
         .attr("stroke-width", "0.5")
         .attr("fill", "white")
@@ -143,7 +145,7 @@ export default {
       let colorMap = new Map();
 
       for (let datapoint of this.covidData) {
-        const color = datapoint.incomplete
+        const color = datapoint.icuIncomplete
           ? "white"
           : this.getColorForDatapoint(datapoint.cases, datapoint.icu);
         colorMap.set(datapoint.state, color);

@@ -43,13 +43,31 @@ const store = new Vuex.Store({
       d3.csv('./owid-covid-latest.csv').then((data) => {
         const europeData = data.filter(data => data.continent == 'Europe');
 
-        state.covidData = europeData.map(state => ({
+        const filteredData = europeData.map(state => ({
           state: state.location,
           cases: +state.total_cases_per_million,
           icu: +state.icu_patients_per_million,
           poverty: +state.extreme_poverty,
-          incomplete: state.total_cases_per_million == "" || state.icu_patients_per_million == "",
+          diabetes: +state.diabetes_prevalence,
+          cardiovascular: +state.cardiovasc_death_rate,
         }));
+
+        const maxPoverty = d3.max(filteredData, d => d.poverty);
+        const maxDiabetes = d3.max(filteredData, d => d.diabetes);
+        const maxCardiovascular = d3.max(filteredData, d => d.cardiovascular);
+
+        // normalize poverty, diabetes, and cardiovascular with max values
+        state.covidData = filteredData.map(d => ({
+          state: d.state,
+          cases: d.cases,
+          icu: d.icu,
+          icuIncomplete: d.icu == 0,
+          poverty: d.poverty = d.poverty / maxPoverty,
+          diabetes: d.diabetes = d.diabetes / maxDiabetes,
+          cardiovascular: d.cardiovascular = d.cardiovascular / maxCardiovascular,
+        }));
+
+
       });
     },
   }

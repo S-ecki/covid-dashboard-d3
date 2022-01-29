@@ -11,7 +11,7 @@
       </div>
       <div class="row">
         <div class="col-md-6">
-          <ChoroplethMap />
+          <BarChart />
         </div>
         <div class="col-md-6">
           <ChoroplethMap />
@@ -22,14 +22,14 @@
 </template>
 
 <script>
-// import BarChart from "./components/BarChart.vue";
+import BarChart from "./components/BarChart.vue";
 import ChoroplethMap from "./components/ChoroplethMap.vue";
 import Dropdown from "./components/Dropdown.vue";
 
 export default {
   name: "App",
   components: {
-    // BarChart,
+    BarChart,
     ChoroplethMap,
     Dropdown,
   },
