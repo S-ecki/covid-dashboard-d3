@@ -1,13 +1,24 @@
 <template>
   <div class="vis-component" ref="chart">
-    <div class="test" v-if="icu != 0">ICU per Million: {{ icu }}</div>
-    <svg id="main-svg" :width="svgWidth" :height="svgHeight">
-      <g class="chart-group" ref="chartGroup">
-        <g class="axis axis-x" ref="axisX"></g>
-        <g class="axis axis-y" ref="axisY"></g>
-        <g class="bars-group" ref="barsGroup"></g>
-      </g>
-    </svg>
+    <!-- todo fix height so bars dont jump  -->
+    <div>
+      some header
+      <div class="info-text" v-if="cases != -1">
+        Infections per Million: {{ cases == 0 ? "No data" : cases }}
+      </div>
+      <div class="info-text" v-if="icu != -1">
+        ICU per Million: {{ icu == 0 ? "No data" : icu }}
+      </div>
+    </div>
+    <div class="bar-chart">
+      <svg id="main-svg" :width="svgWidth" :height="svgHeight">
+        <g class="chart-group" ref="chartGroup">
+          <g class="axis axis-x" ref="axisX"></g>
+          <g class="axis axis-y" ref="axisY"></g>
+          <g class="bars-group" ref="barsGroup"></g>
+        </g>
+      </svg>
+    </div>
   </div>
 </template>
 
@@ -20,6 +31,7 @@ export default {
   props: {},
   data() {
     return {
+      cases: 0,
       icu: 0,
       svgWidth: 0,
       svgHeight: 500,
@@ -47,7 +59,13 @@ export default {
       this.updateNumbers();
     },
     updateNumbers() {
-      this.icu = this.covidDataByCountry(this.selectedState).icu;
+      if (this.selectedState == "") {
+        this.cases = -1;
+        this.icu = -1;
+      } else {
+        this.cases = this.covidDataByCountry(this.selectedState).cases;
+        this.icu = this.covidDataByCountry(this.selectedState).icu;
+      }
     },
     drawXAxis() {
       d3.select(this.$refs.axisX)
@@ -59,30 +77,35 @@ export default {
         )
         .call(d3.axisBottom(this.xScale))
         .selectAll("text")
-        .attr("y", 0)
-        .attr("x", -7)
-        .attr("dy", ".35em")
-        .attr("transform", "rotate(-90)")
-        .style("text-anchor", "end");
+        .attr("class", "labels")
+        .attr("y", 12);
     },
     drawYAxis() {
       d3.select(this.$refs.axisY)
         .call(d3.axisLeft(this.yScale))
+        .selectAll("text")
+        .attr("class", "labels");
+
+      d3.select(this.$refs.axisY)
         .append("text")
+        .attr("class", "y-text")
         .attr("transform", "rotate(-90)")
         .attr("y", 6)
-        .attr("dy", "0.71em")
-        .attr("text-anchor", "end")
-        .attr("fill", "black")
-        .text("Educational Attainment: Bachelor's Degree or Higher (%)");
+        .attr("dy", "0.9em")
+        .text("Risk Factor normalized");
     },
     drawBars() {
-      if (this.selectedState == "") return;
+      if (this.selectedState == "") return; // todo ?
+
       const countryData = this.covidDataByCountry(this.selectedState);
+      let color = this.colorMap.get(this.selectedState);
+      if (color == "white") color = "red";
       const filteredData = [
         { name: "poverty", value: countryData.poverty },
         { name: "diabetes", value: countryData.diabetes },
         { name: "cardiovascular", value: countryData.cardiovascular },
+        { name: "smokers", value: countryData.smokers },
+        { name: "development", value: countryData.development_index_inverse },
       ];
 
       const barsGroup = d3.select(this.$refs.barsGroup);
@@ -91,6 +114,7 @@ export default {
         .data(filteredData)
         .join("rect")
         .attr("class", "bar")
+        .attr("fill", color)
         .attr("x", (d) => this.xScale(d.name))
         .attr("y", (d) => this.yScale(d.value))
         .attr("width", this.xScale.bandwidth())
@@ -102,11 +126,22 @@ export default {
             this.svgPadding.bottom -
             this.yScale(d.value)
         );
-      // .on("click", (event, d) => this.handleBarClick(d.state));
+
+      barsGroup.selectAll(".bar-label").remove();
+
+      // https://stackoverflow.com/questions/42491106/add-labels-to-bar-chart-d3
+      barsGroup
+        .selectAll(".text")
+        .data(filteredData)
+        .join("text")
+        .attr("class", "bar-label")
+        // .append("text")
+        .attr("fill", "black")
+        .attr("x", (d) => this.xScale(d.name) + this.xScale.bandwidth() / 4)
+        .attr("y", (d) => this.yScale(d.value) - 20)
+        .attr("dy", ".8em")
+        .text((d) => (d.value * 100).toFixed(1) + "%");
     },
-    // handleBarClick(val) {
-    //   this.$store.commit("changeSelectedState", val);
-    // },
   },
 
   computed: {
@@ -114,11 +149,11 @@ export default {
       "selectedState",
       "covidData",
       "covidDataByCountry",
+      "colorMap",
       // "casesMin",
       // "casesMax",
       // "icuMin",
       // "icuMax",
-      // "colorMap",
     ]),
     xScale() {
       return d3
@@ -127,8 +162,14 @@ export default {
           0,
           this.svgWidth - this.svgPadding.left - this.svgPadding.right,
         ])
-        .padding(0.1)
-        .domain(["poverty", "diabetes", "cardiovascular"]);
+        .domain([
+          "poverty",
+          "diabetes",
+          "cardiovascular",
+          "smokers",
+          "development",
+        ])
+        .padding(0.5);
     },
     yScale() {
       return d3
@@ -152,11 +193,20 @@ export default {
 </script>
 
 <style>
-.bar {
-  fill: steelblue;
+.info-text {
+  display: flex;
+  align-content: left;
+  flex-direction: row;
 }
 
-.bar:hover {
-  fill: lightblue;
+.labels {
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.y-text {
+  font-size: 14px;
+  fill: black;
+  text-anchor: end;
 }
 </style>

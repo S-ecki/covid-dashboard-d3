@@ -45,16 +45,19 @@ const store = new Vuex.Store({
 
         const filteredData = europeData.map(state => ({
           state: state.location,
-          cases: +state.total_cases_per_million,
+          cases: +state.new_cases_per_million,
           icu: +state.icu_patients_per_million,
           poverty: +state.extreme_poverty,
           diabetes: +state.diabetes_prevalence,
           cardiovascular: +state.cardiovasc_death_rate,
+          smokers: +state.male_smokers + +state.female_smokers,
+          development_index: +state.human_development_index,
         }));
 
         const maxPoverty = d3.max(filteredData, d => d.poverty);
         const maxDiabetes = d3.max(filteredData, d => d.diabetes);
         const maxCardiovascular = d3.max(filteredData, d => d.cardiovascular);
+        const maxSmokers = d3.max(filteredData, d => d.smokers);
 
         // normalize poverty, diabetes, and cardiovascular with max values
         state.covidData = filteredData.map(d => ({
@@ -65,6 +68,8 @@ const store = new Vuex.Store({
           poverty: d.poverty = d.poverty / maxPoverty,
           diabetes: d.diabetes = d.diabetes / maxDiabetes,
           cardiovascular: d.cardiovascular = d.cardiovascular / maxCardiovascular,
+          smokers: d.smokers = d.smokers / maxSmokers,
+          development_index_inverse: 1 - d.development_index,
         }));
 
 
