@@ -21,9 +21,6 @@ const store = new Vuex.Store({
     setColorMap(state, colorMap) {
       state.colorMap = colorMap;
     },
-
-
-
   },
 
   getters: {
@@ -39,6 +36,10 @@ const store = new Vuex.Store({
     vaxMax: (state) => d3.max(state.covidData, d => d.vax),
     deathsMin: (state) => d3.min(state.covidData.filter(d => d.deaths != 0), d => d.deaths),
     deathsMax: (state) => d3.max(state.covidData, d => d.deaths),
+  },
+
+  setter: {
+    selectedState: (state, country) => state.selectedState = country,
   },
 
   actions: {

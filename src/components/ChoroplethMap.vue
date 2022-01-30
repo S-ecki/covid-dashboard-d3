@@ -2,7 +2,35 @@
   <div class="vis-component" ref="vis">
     <svg class="main-svg" :width="svgWidth" :height="svgHeight">
       <g class="bg" ref="bg"></g>
+      <!-- https://observablehq.com/@d3/bivariate-choropleth -->
+      <g
+        class="legend"
+        ref="legend"
+        transform="translate(80,80) rotate(315)"
+      ></g>
       <g class="choropleth-map" ref="map"></g>
+      <!-- http://thenewcode.com/1068/Making-Arrows-in-SVG -->
+      <!-- <defs>
+        <marker
+          id="arrowhead"
+          markerWidth="10"
+          markerHeight="7"
+          refX="0"
+          refY="3.5"
+          orient="auto"
+        >
+          <polygon points="0 0, 10 3.5, 0 7" />
+        </marker>
+      </defs>
+      <line
+        x1="0"
+        y1="50"
+        x2="90"
+        y2="50"
+        stroke="#000"
+        stroke-width="3"
+        marker-end="url(#arrowhead)"
+      /> -->
     </svg>
   </div>
 </template>
@@ -30,9 +58,9 @@ export default {
   },
 
   mounted() {
+    this.drawLegend();
     this.drawVis();
     this.initTooltip();
-    // this.fillColorMap();
   },
 
   methods: {
@@ -147,6 +175,46 @@ export default {
       d3.select(`#mapTooltip`).style("opacity", 0).style("display", "none");
     },
 
+    // https://observablehq.com/@d3/bivariate-choropleth
+    drawLegend() {
+      for (let i = 0; i < 3; ++i) {
+        for (let j = 0; j < 3; ++j) {
+          this.appendRect(i, j);
+        }
+      }
+
+      const rectSize = 30;
+      d3.select(this.$refs.legend)
+        .append("text")
+        .text("Cases ->")
+        .attr("y", rectSize * 4 - 5)
+        // .attr("y", yInd * rectSize)
+        .attr("fill", "black");
+
+      d3.select(this.$refs.legend)
+        .append("text")
+        .text("<- ICU")
+        .attr("transform", "rotate(90)")
+        .attr("x", rectSize + 5)
+        .attr("y", rectSize - 5)
+        .attr("text-anchor", "start")
+        .attr("fill", "black");
+
+      d3.select(this.$refs.legend);
+    },
+    appendRect(xInd, yInd) {
+      const rectSize = 30;
+      const color = bivariate_colors[xInd][yInd];
+
+      d3.select(this.$refs.legend)
+        .append("rect")
+        .attr("x", xInd * rectSize)
+        .attr("y", yInd * rectSize)
+        .attr("width", rectSize)
+        .attr("height", rectSize)
+        .attr("style", `fill:${color};`);
+    },
+
     // this fills up the Map in the store, which saves the colors
     // each state should be highlighted on the choropleth map when selected
     // gets called every time eduRate/ persIncome change
@@ -169,22 +237,33 @@ export default {
       return bivariate_colors[x][y];
     },
 
+    // todo fix this
     // determines the x-"index" of the field the datapoint is on
     // the left column is be 0, middle 1 and right 2
     getXColorIndex(cases) {
-      const scale = d3.scaleLinear().domain([this.casesMin, this.casesMax]);
+      const scale = d3
+        .scaleQuantile()
+        .domain(this.covidData.map((d) => d.cases))
+        .range(d3.range(3));
 
-      const xColorIndex = Math.floor(scale(cases) * 3);
-      return xColorIndex == 3 ? xColorIndex - 1 : xColorIndex;
+      return scale(cases);
+
+      // const xColorIndex = Math.floor(scale(cases) * 3);
+      // return xColorIndex == 3 ? xColorIndex - 1 : xColorIndex;
     },
 
     // determines the y-"index" of the field the datapoint is on
     // the left row is be 0, middle 1 and right 2
     getYColorIndex(icu) {
-      const scale = d3.scaleLinear().domain([this.icuMin, this.icuMax]);
+      const scale = d3
+        .scaleQuantile()
+        .domain(this.covidData.map((d) => d.icu))
+        .range(d3.range(3));
 
-      const yColorIndex = 2 - Math.floor(scale(icu) * 3);
-      return yColorIndex == -1 ? 0 : yColorIndex;
+      return 3 - scale(icu);
+
+      // const yColorIndex = 2 - Math.floor(scale(icu) * 3);
+      // return yColorIndex == -1 ? 0 : yColorIndex;
     },
   },
   computed: {

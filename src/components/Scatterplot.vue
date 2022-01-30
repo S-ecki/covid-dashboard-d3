@@ -2,6 +2,7 @@
   <div class="vis-component" ref="chart">
     <svg class="main-svg" :width="svgWidth" :height="svgHeight" ref="mainSVG">
       <g class="chart-group" ref="chartGroup">
+        <g class="bg" ref="bg"></g>
         <g class="rect-group" ref="rectGroup"></g>
         <g class="axis axis-x" ref="axisX"></g>
         <g class="axis axis-y" ref="axisY"></g>
@@ -42,6 +43,7 @@ export default {
       if (this.$refs.chart) this.svgWidth = this.$refs.chart.clientWidth;
       this.transformSVGs();
       this.drawChart();
+      this.addBackground();
     },
 
     drawChart() {
@@ -125,8 +127,8 @@ export default {
         .attr("cx", (d) => this.xScale(d.vax))
         .attr("cy", (d) => this.yScale(d.cases))
         .attr("r", 3)
-        // .on("mouseover", this.showTooltip)
-        // .on("mouseout", this.hideTooltip);
+        .on("mouseover", this.showTooltip)
+        .on("mouseout", this.hideTooltip)
         .on("click", (_, d) => {
           this.$store.commit("changeSelectedState", d.state);
         });
@@ -148,7 +150,8 @@ export default {
         .attr("y", (d) => this.yScale(d.deaths))
         .attr("width", 6)
         .attr("height", 6)
-        // .attr("r", 4)
+        .on("mouseover", this.showTooltip)
+        .on("mouseout", this.hideTooltip)
         .on("click", (_, d) => {
           this.$store.commit("changeSelectedState", d.state);
         });
@@ -194,6 +197,18 @@ export default {
         `translate(${this.svgPadding.left},${this.svgPadding.top})`
       );
     },
+
+    addBackground() {
+      // add transparent rect "behind" map with onClick handler unselecting everything
+      d3.select(this.$refs.bg)
+        .append("rect")
+        .attr("width", this.svgWidth)
+        .attr("height", this.svgHeight)
+        .attr("style", `fill:transparent;`)
+        .on("click", () => {
+          this.$store.commit("clearStateSelection");
+        });
+    },
   },
 
   computed: {
@@ -212,7 +227,7 @@ export default {
     xScale() {
       return d3
         .scaleLinear()
-        .domain([this.vaxMin, this.vaxMax])
+        .domain([0, this.vaxMax])
         .range([
           0,
           this.svgWidth - this.svgPadding.left - this.svgPadding.right,
@@ -221,7 +236,7 @@ export default {
     yScale() {
       return d3
         .scaleLinear()
-        .domain([this.deathsMin, this.casesMax])
+        .domain([0, this.casesMax])
         .range([
           this.svgHeight - this.svgPadding.top - this.svgPadding.bottom,
           0,
