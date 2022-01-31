@@ -1,20 +1,31 @@
 <template>
   <div class="vis-component" ref="vis">
-    <div class="info-text" v-if="cases != -1">
-      Infections per Million:
-      {{ cases == 0 ? "No data" : cases.toFixed(0) }}
-    </div>
-    <div class="info-text" v-if="icu != -1">
-      ICU per Million: {{ icu == 0 ? "No data" : icu.toFixed(1) }}
-    </div>
+    <b-container>
+      <b-row align-h="center" align-v="start">
+        <div class="h5 pb-1 pr-2">
+          ICU Patients and New Infections per Million
+        </div>
+      </b-row>
+      <b-row align-h="center" align-v="start">
+        <p class="font-weight-ligth pr-1">Legend Explanation</p>
+        <div
+          v-b-tooltip.html
+          title="The Map is encoded with a <b>bivariate color scheme</b>.<br>
+        Increasing <b>ICU Patients</b> are shown on the <b>top-left axis</b>.<br>
+        Increasing <b>Infections</b> are shown on the <b>top-right axis</b>.<br>
+        Countries with <b>no data</b> are shown in <b>gray</b>."
+        >
+          <b-icon
+            icon="question-circle-fill"
+            style="width: 0.9em; height: 0.9em"
+          ></b-icon>
+        </div>
+      </b-row>
+    </b-container>
     <svg class="main-svg" :width="svgWidth" :height="svgHeight">
       <g class="bg" ref="bg"></g>
       <!-- Legend and JS code that goes along with it inspired by: https://observablehq.com/@d3/bivariate-choropleth -->
-      <g
-        class="legend"
-        ref="legend"
-        transform="translate(80,80) rotate(315)"
-      ></g>
+      <g class="legend" ref="legend"></g>
       <g class="choropleth-map" ref="map"></g>
     </svg>
   </div>
@@ -33,6 +44,8 @@ export default {
     return {
       cases: 0,
       icu: 0,
+      rectSize: 30,
+      noDataColor: "grey",
       svgWidth: 500,
       svgHeight: 600,
       svgPadding: {
@@ -45,7 +58,6 @@ export default {
   },
 
   mounted() {
-    this.drawLegend();
     this.drawVis();
     this.initTooltip();
   },
@@ -57,6 +69,7 @@ export default {
       this.drawMap();
       this.addBackground();
       this.updateNumbers();
+      this.drawLegend();
     },
 
     transformSVG() {
@@ -85,15 +98,7 @@ export default {
         .attr("id", (d) => d.properties.name)
         .join("path")
         .attr("d", path)
-        .attr("stroke", (d) => {
-          if (this.covidData.length == 0) return "transparent";
-
-          const county = this.covidData.filter(
-            (c) => c.state === d.properties.name
-          )[0];
-
-          return county.icuIncomplete ? "white" : "white"; // maybe black
-        })
+        .attr("stroke", "white")
         .attr("stroke-width", "0.3")
         .attr("fill", (d) => {
           if (this.selectedState == "") {
@@ -113,13 +118,13 @@ export default {
         .on("mouseout", this.hideTooltip);
 
       // todo fix this
-      const incompleteStates = this.covidData
-        .filter((d) => d.icuIncomplete)
-        .map((d) => d.state);
+      // const incompleteStates = this.covidData
+      //   .filter((d) => d.icuIncomplete)
+      //   .map((d) => d.state);
 
-      for (var state of incompleteStates) {
-        d3.select(`#${state}`).remove();
-      }
+      // for (var state of incompleteStates) {
+      //   d3.select(`#${state}`).remove();
+      // }
     },
     getGeopath() {
       return d3.geoPath().projection(this.getProjection());
@@ -129,11 +134,11 @@ export default {
         d3 // this projection was chosen due to the recommendation during the tutorial
           .geoAlbers()
           // the next lines were copied from the following link to display Europe properly: https://observablehq.com/@toja/five-map-projections-for-europe#_albers
-          .rotate([-20.0, 0.0])
-          .center([0.0, 52.0])
-          .parallels([35.0, 65.0])
+          .rotate([-15, 0.0])
+          .center([0, 52.0])
+          .parallels([55.0, 65.0])
           .translate([this.svgWidth / 2, this.svgHeight / 2])
-          .scale([this.svgWidth * 0.75])
+          .scale([this.svgHeight * 1.4])
       );
     },
 
@@ -185,38 +190,79 @@ export default {
 
     // https://observablehq.com/@d3/bivariate-choropleth
     drawLegend() {
+      d3.selectAll(".map-legend").remove();
+      const rectDiagonal = Math.sqrt(2 * this.rectSize * this.rectSize);
+      d3.select(this.$refs.legend).attr(
+        "transform",
+        `translate(${this.svgWidth - 3 * rectDiagonal - 20},${
+          3 * this.rectSize
+        })rotate(315)`
+      );
+
       for (let i = 0; i < 3; ++i) {
         for (let j = 0; j < 3; ++j) {
           this.appendRect(i, j);
         }
       }
 
-      const rectSize = 30;
+      this.drawText();
+      this.drawNoDataLegend();
+    },
+    drawText() {
       d3.select(this.$refs.legend)
         .append("text")
         .text("Infections")
-        .attr("y", rectSize * 4 - 5)
-        .attr("fill", "black");
+        .attr("y", this.rectSize * 4 - 12)
+        .attr("fill", "black")
+        .attr("font-size", "14px")
+        .attr("class", "map-legend");
 
       d3.select(this.$refs.legend)
         .append("text")
         .text("ICU Patients")
         .attr("transform", "rotate(90)")
-        .attr("x", rectSize + 15)
-        .attr("y", rectSize - 8)
+        .attr("class", "map-legend")
+        .attr("x", this.rectSize + 10)
+        .attr("y", this.rectSize - 12)
         .attr("text-anchor", "middle")
+        .attr("font-size", "14px")
+        .attr("fill", "black");
+    },
+    drawNoDataLegend() {
+      const rectDiagonal = Math.sqrt(2 * this.rectSize * this.rectSize);
+      const x = this.svgWidth - 4 * rectDiagonal;
+      const y = rectDiagonal * 3 + this.rectSize + 8;
+      const rectSize = this.rectSize - 6;
+
+      d3.select(this.$refs.map)
+        .append("rect")
+        .attr("class", "map-legend")
+        .attr("x", x)
+        .attr("y", y)
+        .attr("width", rectSize)
+        .attr("height", rectSize)
+        .style("fill", this.noDataColor);
+
+      d3.select(this.$refs.map)
+        .append("text")
+        .text("Insufficient Data")
+        .attr("class", "map-legend")
+        .attr("x", x + rectSize + 10)
+        .attr("y", y + rectSize - 7)
+        // .attr("text-anchor", "middle")
+        .attr("font-size", "14px")
         .attr("fill", "black");
     },
     appendRect(xInd, yInd) {
-      const rectSize = 30;
       const color = bivariate_colors[xInd][yInd];
 
       d3.select(this.$refs.legend)
         .append("rect")
-        .attr("x", xInd * rectSize)
-        .attr("y", yInd * rectSize)
-        .attr("width", rectSize)
-        .attr("height", rectSize)
+        .attr("class", "map-legend")
+        .attr("x", xInd * this.rectSize)
+        .attr("y", yInd * this.rectSize)
+        .attr("width", this.rectSize)
+        .attr("height", this.rectSize)
         .attr("style", `fill:${color};`);
     },
 
@@ -228,7 +274,7 @@ export default {
 
       for (let datapoint of this.covidData) {
         const color = datapoint.icuIncomplete
-          ? "transparent"
+          ? this.noDataColor
           : this.getColorForDatapoint(datapoint.cases, datapoint.icu);
         colorMap.set(datapoint.state, color);
       }
@@ -314,5 +360,8 @@ export default {
   font-size: 14px;
   opacity: 0;
   display: none;
+}
+.small-text {
+  font-size: 13px;
 }
 </style>

@@ -1,5 +1,28 @@
 <template>
   <div class="vis-component" ref="chart">
+    <b-container>
+      <b-row align-h="center" align-v="start">
+        <div class="h5 pb-1 pr-2">
+          Relation between Vaccinations and New Infections/Deaths
+        </div>
+        <div
+          v-b-tooltip.html
+          title="Click the legend to hide/display a dataset.</br>
+          Countries without sufficient vaccination data are not shown. <br>
+          Vaccination Rates exceeding 100% are possible due to non-resident vaccinations!"
+        >
+          <b-icon
+            icon="question-circle"
+            style="width: 1.5em; height: 1.5em"
+          ></b-icon>
+        </div>
+      </b-row>
+      <b-row align-h="center">
+        <b-alert show variant="warning" v-if="missingData" class="w-50 mb-0"
+          >No Data for selected Focus Country!</b-alert
+        >
+      </b-row>
+    </b-container>
     <svg class="main-svg" :width="svgWidth" :height="svgHeight" ref="mainSVG">
       <g class="chart-group" ref="chartGroup">
         <g class="bg" ref="bg"></g>
@@ -26,8 +49,9 @@ export default {
       colors: ["green", "red"],
       showCases: true,
       showDeaths: true,
+      missingData: false,
       svgWidth: 500,
-      svgHeight: 600,
+      svgHeight: 560,
       svgPadding: {
         top: 20,
         right: 20,
@@ -40,7 +64,6 @@ export default {
   mounted() {
     this.drawVis();
     this.initTooltip();
-    this.drawLegend();
   },
 
   methods: {
@@ -56,6 +79,7 @@ export default {
       this.drawXAxis();
       this.drawYAxis();
       this.drawScatter();
+      this.drawLegend();
     },
 
     drawXAxis() {
@@ -86,35 +110,45 @@ export default {
       d3.select(this.$refs.axisY).call(yAxis);
     },
     drawLegend() {
+      d3.selectAll(".scatter-legend").remove();
+
       d3.select(this.$refs.legendGroup)
         .append("circle")
+        .attr("class", "scatter-legend")
         .attr("cx", 30)
         .attr("cy", 10)
         .attr("r", 6)
         .style("fill", this.colors[0])
+        .style("opacity", this.showCases ? 1 : 0.5)
         .on("click", this.toggleCases);
       d3.select(this.$refs.legendGroup)
         .append("text")
+        .attr("class", "scatter-legend")
         .attr("x", 50)
         .attr("y", 10)
         .text("New Infections per 1 Million People")
         .style("font-size", "15px")
+        .style("fill", this.showCases ? "black" : "grey")
         .attr("alignment-baseline", "middle")
         .on("click", this.toggleCases);
       d3.select(this.$refs.legendGroup)
         .append("rect")
+        .attr("class", "scatter-legend")
         .attr("x", 24)
         .attr("y", 10 + 13)
         .attr("width", 12)
         .attr("height", 12)
         .style("fill", this.colors[1])
+        .style("opacity", this.showDeaths ? 1 : 0.5)
         .on("click", this.toggleDeaths);
       d3.select(this.$refs.legendGroup)
         .append("text")
+        .attr("class", "scatter-legend")
         .attr("x", 50)
         .attr("y", 10 + 20)
         .text("Deaths per 1 Million People")
         .style("font-size", "15px")
+        .style("fill", this.showDeaths ? "black" : "grey")
         .attr("alignment-baseline", "middle")
         .on("click", this.toggleDeaths);
     },
@@ -137,7 +171,14 @@ export default {
         data = this.covidData;
       }
 
-      // data = data.filter((d) => d.cases > 0 && d.vax > 0);
+      data = data.filter((d) => d.cases > 0 && d.vax > 0);
+
+      if (data.length == 0) {
+        this.missingData = true;
+        return;
+      } else {
+        this.missingData = false;
+      }
 
       if (this.showCases) {
         d3.select(this.$refs.scatterGroup)

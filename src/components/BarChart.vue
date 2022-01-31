@@ -2,7 +2,7 @@
   <div ref="chart">
     <b-container>
       <b-row align-h="center">
-        <div class="pr-2">Diverse Risk Factors for Selected Country</div>
+        <div class="h5 pr-2">Diverse Risk Factors, normalized</div>
         <div
           v-b-tooltip.html
           title="
@@ -15,7 +15,10 @@
         <p><b>Hover over the bars to see exact numbers.</b></p>
         "
         >
-          <b-icon icon="question-circle"></b-icon>
+          <b-icon
+            icon="question-circle"
+            style="width: 1.5em; height: 1.5em"
+          ></b-icon>
         </div>
       </b-row>
     </b-container>
@@ -41,7 +44,7 @@ export default {
   data() {
     return {
       svgWidth: 0,
-      svgHeight: 500,
+      svgHeight: 600,
       svgPadding: {
         top: 25,
         right: 20,

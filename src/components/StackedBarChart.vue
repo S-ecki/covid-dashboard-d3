@@ -2,17 +2,20 @@
   <div class="vis-component" ref="chart">
     <div class="stacked-bar-chart">
       <b-container>
-        <b-row align-h="center" align-v="top">
-          <div class="Title pb-4 pr-2">Vaccination Rates per Dose</div>
+        <b-row align-h="center" align-v="start">
+          <div class="h5 pb-4 pr-2">Vaccination Rates per Dose</div>
           <div
             v-b-tooltip.html
             title="Vaccination Rates per Dose of the <b>Focus Country</b>
             can be compared to another selected Area."
           >
-            <b-icon icon="question-circle"></b-icon>
+            <b-icon
+              icon="question-circle"
+              style="width: 1.5em; height: 1.5em"
+            ></b-icon>
           </div>
         </b-row>
-        <b-row align-h="left" align-v="center" class="pl-5 pb-1">
+        <b-row align-v="center" class="pl-5 pb-1">
           <div>Comparison Area:</div>
           <div
             class="dropdown pl-2"
