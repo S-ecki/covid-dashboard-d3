@@ -1,13 +1,22 @@
 <template>
-  <div class="dropdown">
-    <select class="form-control" v-model="selectedState">
-      <option value="">Choose a Focus Country</option>
-      <option v-for="country in countries" :key="country.state">
-        {{ country.state }}
-      </option>
-    </select>
-    <!-- <div>Selected country: {{ selectedState }}</div> -->
-  </div>
+  <b-container>
+    <b-row class="p-2" align-h="center" align-v="center">
+      <b-col cols="6" class="display-5 text-light pr-3 font-weight-bolder top">
+        COVID-19 Dashboard
+      </b-col>
+      <b-col cols="3" class="text-light pr-3 font-weight-bolder top">
+        Select a Focus Country
+      </b-col>
+      <b-col cols="3" class="dropdown">
+        <select class="form-control" v-model="selectedState">
+          <option value="">No Selection</option>
+          <option v-for="country in countries" :key="country.state">
+            {{ country.state }}
+          </option>
+        </select>
+      </b-col>
+    </b-row>
+  </b-container>
 </template>
 
 <script>
@@ -20,12 +29,7 @@ export default {
     };
   },
   mounted() {},
-  methods: {
-    // changeCountrySelection(event) {
-    //   const selection = event.target.value;
-    //   this.$store.commit("changeSelectedState", selection);
-    // },
-  },
+  methods: {},
   computed: {
     selectedState: {
       get() {
@@ -52,4 +56,7 @@ export default {
 </script>
 
 <style>
+.top {
+  font-size: 1.2em;
+}
 </style>

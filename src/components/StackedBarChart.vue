@@ -61,7 +61,7 @@ export default {
       countries: [],
       colors: ["#1A4314", "#2C5E1A", "#B2D2A4"],
       svgWidth: 500,
-      svgHeight: 510,
+      svgHeight: 455,
       svgPadding: {
         top: 20,
         right: 20,

@@ -1,10 +1,10 @@
 <template>
   <div id="app">
     <b-container fluid>
-      <b-row md="2" class="p-2">
+      <b-row class="p-3 bg-dark">
         <Dropdown />
       </b-row>
-      <b-row md="5">
+      <b-row class="pt-4">
         <b-col md="7" class="pr-1">
           <Scatterplot />
         </b-col>
@@ -12,7 +12,7 @@
           <StackedBarChart />
         </b-col>
       </b-row>
-      <b-row md="5">
+      <b-row>
         <b-col md="7" class="pt-4">
           <ChoroplethMap />
         </b-col>
@@ -52,7 +52,11 @@ export default {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
-  color: #2c3e50;
+  color: #000000;
   margin-top: 20px;
+}
+
+#app .h5 {
+  margin-top: 0;
 }
 </style>

@@ -71,6 +71,7 @@ const store = new Vuex.Store({
         const maxCardiovascular = d3.max(filteredData, d => d.cardiovascular);
         const maxSmokers = d3.max(filteredData, d => d.smokers);
 
+
         // normalize poverty, diabetes, smokers and cardiovascular with max values
         state.covidData = filteredData.map(d => ({
           state: d.state,
@@ -91,8 +92,6 @@ const store = new Vuex.Store({
           vax_full: d.vax_full,
           vax_booster: d.vax_booster,
         }));
-
-
       });
     },
   }

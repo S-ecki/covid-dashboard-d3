@@ -39,6 +39,7 @@
 <script>
 import * as d3 from "d3";
 import { mapGetters } from "vuex";
+import bivariate_colors from "../helpers/bivariate_colors.js";
 
 export default {
   name: "Scatterplot",
@@ -46,12 +47,12 @@ export default {
   data() {
     return {
       hoveredID: "",
-      colors: ["green", "red"],
+      colors: [bivariate_colors[2][2], bivariate_colors[0][0]],
       showCases: true,
       showDeaths: true,
       missingData: false,
       svgWidth: 500,
-      svgHeight: 560,
+      svgHeight: 518,
       svgPadding: {
         top: 20,
         right: 20,
@@ -187,7 +188,7 @@ export default {
           .join("circle")
           .attr("class", "scatter-cases")
           .attr("id", (d) => `scatter-cases-${d.cases.toFixed(0)}`)
-          .attr("fill", "green")
+          .attr("fill", this.colors[0])
           .attr("stroke", "black")
           .attr("stroke-width", (d) =>
             this.selectedState == d.state ? "0.5" : "0"
@@ -208,7 +209,7 @@ export default {
           .join("rect")
           .attr("class", "scatter-deaths")
           .attr("id", (d) => `scatter-deaths-${d.cases.toFixed(0)}`)
-          .attr("fill", "red")
+          .attr("fill", this.colors[1])
           .attr("stroke", "black")
           .attr("stroke-width", "0")
           .attr("x", (d) => this.xScale(d.vax))
@@ -324,7 +325,7 @@ export default {
     xScale() {
       return d3
         .scaleLinear()
-        .domain([0, this.vaxMax])
+        .domain([this.vaxMin, this.vaxMax])
         .range([
           0,
           this.svgWidth - this.svgPadding.left - this.svgPadding.right,

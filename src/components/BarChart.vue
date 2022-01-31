@@ -44,11 +44,11 @@ export default {
   data() {
     return {
       svgWidth: 0,
-      svgHeight: 600,
+      svgHeight: 530,
       svgPadding: {
         top: 25,
         right: 20,
-        bottom: 70,
+        bottom: 60,
         left: 80,
       },
     };

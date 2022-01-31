@@ -7,18 +7,15 @@
         </div>
       </b-row>
       <b-row align-h="center" align-v="start">
-        <p class="font-weight-ligth pr-1">Legend Explanation</p>
+        <p class="font-weight-ligth pr-1 text-muted">Legend Explanation</p>
         <div
           v-b-tooltip.html
           title="The Map is encoded with a <b>bivariate color scheme</b>.<br>
-        Increasing <b>ICU Patients</b> are shown on the <b>top-left axis</b>.<br>
-        Increasing <b>Infections</b> are shown on the <b>top-right axis</b>.<br>
-        Countries with <b>no data</b> are shown in <b>gray</b>."
+        Increasing <b>Infections</b> are shown on the <b>X-Axis</b>.<br>
+        Increasing <b>ICU Patients</b> are shown on the <b>Y-Axis</b>.<br>
+        Missing datapoints are substituted with 0 - hover over the country to see details."
         >
-          <b-icon
-            icon="question-circle-fill"
-            style="width: 0.9em; height: 0.9em"
-          ></b-icon>
+          <b-icon icon="question-circle-fill" variant="secondary"></b-icon>
         </div>
       </b-row>
     </b-container>
@@ -45,13 +42,12 @@ export default {
       cases: 0,
       icu: 0,
       rectSize: 30,
-      noDataColor: "grey",
-      svgWidth: 500,
-      svgHeight: 600,
+      svgWidth: 480,
+      svgHeight: 500,
       svgPadding: {
         top: 20,
         right: 20,
-        bottom: 20,
+        bottom: 0,
         left: 20,
       },
     };
@@ -191,12 +187,10 @@ export default {
     // https://observablehq.com/@d3/bivariate-choropleth
     drawLegend() {
       d3.selectAll(".map-legend").remove();
-      const rectDiagonal = Math.sqrt(2 * this.rectSize * this.rectSize);
+      // const rectDiagonal = Math.sqrt(2 * this.rectSize * this.rectSize);
       d3.select(this.$refs.legend).attr(
         "transform",
-        `translate(${this.svgWidth - 3 * rectDiagonal - 20},${
-          3 * this.rectSize
-        })rotate(315)`
+        `translate(${this.svgWidth - 4 * this.rectSize},${this.svgPadding.top})`
       );
 
       for (let i = 0; i < 3; ++i) {
@@ -206,7 +200,7 @@ export default {
       }
 
       this.drawText();
-      this.drawNoDataLegend();
+      // this.drawNoDataLegend();
     },
     drawText() {
       d3.select(this.$refs.legend)
@@ -220,39 +214,38 @@ export default {
       d3.select(this.$refs.legend)
         .append("text")
         .text("ICU Patients")
-        .attr("transform", "rotate(90)")
+        .attr("transform", "rotate(270)")
         .attr("class", "map-legend")
-        .attr("x", this.rectSize + 10)
-        .attr("y", this.rectSize - 12)
-        .attr("text-anchor", "middle")
+        .attr("x", this.rectSize - 39)
+        .attr("y", this.rectSize - 35)
+        .attr("text-anchor", "end")
         .attr("font-size", "14px")
         .attr("fill", "black");
     },
-    drawNoDataLegend() {
-      const rectDiagonal = Math.sqrt(2 * this.rectSize * this.rectSize);
-      const x = this.svgWidth - 4 * rectDiagonal;
-      const y = rectDiagonal * 3 + this.rectSize + 8;
-      const rectSize = this.rectSize - 6;
+    // drawNoDataLegend() {
+    //   // const rectDiagonal = Math.sqrt(2 * this.rectSize * this.rectSize);
+    //   const x = this.svgWidth - 5.5 * this.rectSize;
+    //   const y = this.svgPadding.top + this.rectSize * 4 - 10;
+    //   const rectSize = this.rectSize - 8;
 
-      d3.select(this.$refs.map)
-        .append("rect")
-        .attr("class", "map-legend")
-        .attr("x", x)
-        .attr("y", y)
-        .attr("width", rectSize)
-        .attr("height", rectSize)
-        .style("fill", this.noDataColor);
+    //   d3.select(this.$refs.map)
+    //     .append("rect")
+    //     .attr("class", "map-legend")
+    //     .attr("x", x)
+    //     .attr("y", y)
+    //     .attr("width", rectSize)
+    //     .attr("height", rectSize)
+    //     .style("fill", this.noDataColor);
 
-      d3.select(this.$refs.map)
-        .append("text")
-        .text("Insufficient Data")
-        .attr("class", "map-legend")
-        .attr("x", x + rectSize + 10)
-        .attr("y", y + rectSize - 7)
-        // .attr("text-anchor", "middle")
-        .attr("font-size", "14px")
-        .attr("fill", "black");
-    },
+    //   d3.select(this.$refs.map)
+    //     .append("text")
+    //     .text("Missing Data")
+    //     .attr("class", "map-legend")
+    //     .attr("x", x + rectSize + 10)
+    //     .attr("y", y + rectSize - 6)
+    //     .attr("font-size", "14px")
+    //     .attr("fill", "black");
+    // },
     appendRect(xInd, yInd) {
       const color = bivariate_colors[xInd][yInd];
 
@@ -273,9 +266,7 @@ export default {
       let colorMap = new Map();
 
       for (let datapoint of this.covidData) {
-        const color = datapoint.icuIncomplete
-          ? this.noDataColor
-          : this.getColorForDatapoint(datapoint.cases, datapoint.icu);
+        const color = this.getColorForDatapoint(datapoint.cases, datapoint.icu);
         colorMap.set(datapoint.state, color);
       }
       this.$store.commit("setColorMap", colorMap);
