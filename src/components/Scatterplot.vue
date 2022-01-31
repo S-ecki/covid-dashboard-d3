@@ -80,10 +80,7 @@ export default {
     },
 
     drawYAxis() {
-      const yAxis = d3
-        .axisLeft(this.yScale)
-        // .ticks(6)
-        .tickFormat((data) => `${data}`);
+      const yAxis = d3.axisLeft(this.yScale).tickFormat((data) => `${data}`);
 
       d3.select(this.$refs.axisY).call(yAxis);
 
@@ -169,18 +166,24 @@ export default {
       d3.select("#scatterTooltip").remove();
       // the idea of how to use tooltips was inspired by this website, but heavily changed to my own needs
       // https://bl.ocks.org/d3noob/a22c42db65eb00d4e369
-      d3.select("body").append("div").attr("id", "scatterTooltip");
+      d3.select("body")
+        .append("div")
+        .attr("id", "scatterTooltip")
+        .class("tooltip");
     },
     showTooltip(event, data) {
-      d3.select("#scatterTooltip")
+      const div = d3.select("#scatterTooltip").style("opacity", 0);
+      div.transition().duration(150).style("opacity", 0.95);
+
+      div
+        .html(data.state)
         .style("left", `${event.pageX - 50}px`)
         .style("top", `${event.pageY + 30}px`)
-        .style("opacity", 1)
-        .style("display", "block")
-        .text(data.state);
+        .style("display", "block");
     },
     hideTooltip() {
-      d3.select(`#scatterTooltip`).style("opacity", 0).style("display", "none");
+      const div = d3.select("#scatterTooltip").style("opacity", 0.95);
+      div.transition().duration(300).style("opacity", 0);
     },
 
     transformSVGs() {

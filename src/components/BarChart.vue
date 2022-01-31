@@ -1,10 +1,11 @@
 <template>
   <div class="vis-component" ref="chart">
     <!-- todo fix height so bars dont jump  -->
-    <div>
+    <div v-b-tooltip.html title="test<p>test</br>test">
       some header
       <div class="info-text" v-if="cases != -1">
-        Infections per Million: {{ cases == 0 ? "No data" : cases.toFixed(0) }}
+        Infections per Million:
+        {{ cases == 0 ? "No data" : cases.toFixed(0) }}
       </div>
       <div class="info-text" v-if="icu != -1">
         ICU per Million: {{ icu == 0 ? "No data" : icu.toFixed(1) }}
@@ -39,7 +40,7 @@ export default {
         top: 25,
         right: 20,
         bottom: 70,
-        left: 40,
+        left: 80,
       },
     };
   },
@@ -90,6 +91,7 @@ export default {
         .append("text")
         .attr("class", "y-text")
         .attr("transform", "rotate(-90)")
+
         .attr("y", 6)
         .attr("dy", "0.9em")
         .text("Risk Factor normalized");
@@ -152,10 +154,6 @@ export default {
       "covidData",
       "covidDataByCountry",
       "colorMap",
-      // "casesMin",
-      // "casesMax",
-      // "icuMin",
-      // "icuMax",
     ]),
     xScale() {
       return d3
@@ -209,6 +207,5 @@ export default {
 .y-text {
   font-size: 14px;
   fill: black;
-  text-anchor: end;
 }
 </style>

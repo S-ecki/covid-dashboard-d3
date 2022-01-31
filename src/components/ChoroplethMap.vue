@@ -1,8 +1,11 @@
 <template>
   <div class="vis-component" ref="vis">
+    <b-button size="lg" variant="primary" disabled class="mb-2">
+      <b-icon icon="question-circle-fill" aria-label="Help"></b-icon>
+    </b-button>
     <svg class="main-svg" :width="svgWidth" :height="svgHeight">
       <g class="bg" ref="bg"></g>
-      <!-- https://observablehq.com/@d3/bivariate-choropleth -->
+      <!-- Legend and JS code that goes along with it inspired by: https://observablehq.com/@d3/bivariate-choropleth -->
       <g
         class="legend"
         ref="legend"
@@ -154,25 +157,29 @@ export default {
       d3.select("#mapTooltip").remove();
       // the idea of how to use tooltips was inspired by this website, but heavily changed to my own needs
       // https://bl.ocks.org/d3noob/a22c42db65eb00d4e369
-      d3.select("body").append("div").attr("id", "mapTooltip");
+      d3.select("body").append("div").attr("id", "mapTooltip").class("tooltip");
     },
     showTooltip(event, data) {
       const stateName = data.properties.name;
-      const casesOfState = this.covidDataByCountry(stateName).cases;
-      const icuOfState = this.covidDataByCountry(stateName).icu;
+      const casesOfState = this.covidDataByCountry(stateName).cases.toFixed(0);
+      const icuOfState = this.covidDataByCountry(stateName).icu.toFixed(1);
 
-      // additional styling by css
-      d3
-        .select("#mapTooltip")
-        .style("left", `${event.pageX - 50}px`)
-        .style("top", `${event.pageY + 50}px`)
-        .style("opacity", 1)
-        .style("display", "block").text(`${stateName}
-        cases: ${casesOfState}
-        ICU: ${icuOfState}`);
+      const div = d3.select("#mapTooltip").style("opacity", 0);
+      div.transition().duration(150).style("opacity", 0.95);
+
+      div
+        .html(
+          `<b>${stateName}</b> <br>
+        Infections / Million: ${casesOfState} <br>
+        ICU beds / Million: ${icuOfState == 0 ? "No Data" : icuOfState}`
+        )
+        .style("left", `${event.pageX - 40}px`)
+        .style("top", `${event.pageY + 40}px`)
+        .style("display", "block");
     },
     hideTooltip() {
-      d3.select(`#mapTooltip`).style("opacity", 0).style("display", "none");
+      const div = d3.select("#mapTooltip").style("opacity", 0.95);
+      div.transition().duration(300).style("opacity", 0);
     },
 
     // https://observablehq.com/@d3/bivariate-choropleth
@@ -186,18 +193,17 @@ export default {
       const rectSize = 30;
       d3.select(this.$refs.legend)
         .append("text")
-        .text("Cases ->")
+        .text("Infections")
         .attr("y", rectSize * 4 - 5)
-        // .attr("y", yInd * rectSize)
         .attr("fill", "black");
 
       d3.select(this.$refs.legend)
         .append("text")
-        .text("<- ICU")
+        .text("ICU Beds")
         .attr("transform", "rotate(90)")
         .attr("x", rectSize + 5)
         .attr("y", rectSize - 5)
-        .attr("text-anchor", "start")
+        .attr("text-anchor", "middle")
         .attr("fill", "black");
 
       d3.select(this.$refs.legend);
@@ -297,4 +303,16 @@ export default {
 </script>
 
 <style>
+#mapTooltip {
+  position: absolute;
+  padding: 4px;
+  text-align: center;
+  width: 180px;
+  height: 80px;
+  background: lightgrey;
+  border-radius: 5px;
+  font-size: 14px;
+  opacity: 0;
+  display: none;
+}
 </style>

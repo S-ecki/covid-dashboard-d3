@@ -21,10 +21,10 @@ export default {
   },
   mounted() {},
   methods: {
-    changeCountrySelection(event) {
-      const selection = event.target.value;
-      this.$store.commit("changeSelectedState", selection);
-    },
+    // changeCountrySelection(event) {
+    //   const selection = event.target.value;
+    //   this.$store.commit("changeSelectedState", selection);
+    // },
   },
   computed: {
     selectedState: {

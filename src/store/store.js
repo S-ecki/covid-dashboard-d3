@@ -36,6 +36,9 @@ const store = new Vuex.Store({
     vaxMax: (state) => d3.max(state.covidData, d => d.vax),
     deathsMin: (state) => d3.min(state.covidData.filter(d => d.deaths != 0), d => d.deaths),
     deathsMax: (state) => d3.max(state.covidData, d => d.deaths),
+    vax_average: (state) => d3.mean(state.covidData, d => d.vax),
+    vax_full_average: (state) => d3.mean(state.covidData, d => d.vax_full),
+    vax_booster_average: (state) => d3.mean(state.covidData, d => d.vax_booster),
   },
 
   setter: {
@@ -57,8 +60,10 @@ const store = new Vuex.Store({
           cardiovascular: +state.cardiovasc_death_rate,
           smokers: +state.male_smokers + +state.female_smokers,
           development_index: +state.human_development_index,
-          vax: +state.people_vaccinated_per_hundred,
           deaths: +state.total_deaths_per_million,
+          vax: +state.people_vaccinated_per_hundred,
+          vax_full: +state.people_fully_vaccinated_per_hundred,
+          vax_booster: +state.total_boosters_per_hundred,
         }));
 
         const maxPoverty = d3.max(filteredData, d => d.poverty);
@@ -66,7 +71,7 @@ const store = new Vuex.Store({
         const maxCardiovascular = d3.max(filteredData, d => d.cardiovascular);
         const maxSmokers = d3.max(filteredData, d => d.smokers);
 
-        // normalize poverty, diabetes, and cardiovascular with max values
+        // normalize poverty, diabetes, smokers and cardiovascular with max values
         state.covidData = filteredData.map(d => ({
           state: d.state,
           cases: d.cases,
@@ -77,8 +82,10 @@ const store = new Vuex.Store({
           cardiovascular: d.cardiovascular = d.cardiovascular / maxCardiovascular,
           smokers: d.smokers = d.smokers / maxSmokers,
           development_index_inverse: 1 - d.development_index,
-          vax: d.vax,
           deaths: d.deaths,
+          vax: d.vax,
+          vax_full: d.vax_full,
+          vax_booster: d.vax_booster,
         }));
 
 
