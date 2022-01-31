@@ -1,16 +1,24 @@
 <template>
-  <div class="vis-component" ref="chart">
-    <!-- todo fix height so bars dont jump  -->
-    <div v-b-tooltip.html title="test<p>test</br>test">
-      some header
-      <div class="info-text" v-if="cases != -1">
-        Infections per Million:
-        {{ cases == 0 ? "No data" : cases.toFixed(0) }}
-      </div>
-      <div class="info-text" v-if="icu != -1">
-        ICU per Million: {{ icu == 0 ? "No data" : icu.toFixed(1) }}
-      </div>
-    </div>
+  <div ref="chart">
+    <b-container>
+      <b-row align-h="center">
+        <div class="pr-2">Diverse Risk Factors for Selected Country</div>
+        <div
+          v-b-tooltip.html
+          title="
+        Risk Facotrs are normalized by dividing them by the biggest occurance of the risk factor.<br>
+        <b>Poverty:</b> Percentage of population below the poverty line.<br>
+        <b>Diabetes:</b> Percentage of population with diabetes.<br>
+        <b>CV Death:</b> Death rate from cardiovascular disease per 100.000 people.<br>
+        <b>Smoking:</b> Percentage of population who smoke.<br>
+        <b>Inverse HDI:</b> Inverse of the Human Development Index.
+        <p><b>Hover over the bars to see exact numbers.</b></p>
+        "
+        >
+          <b-icon icon="question-circle"></b-icon>
+        </div>
+      </b-row>
+    </b-container>
     <div class="bar-chart">
       <svg id="main-svg" :width="svgWidth" :height="svgHeight">
         <g class="chart-group" ref="chartGroup">
@@ -32,8 +40,6 @@ export default {
   props: {},
   data() {
     return {
-      cases: 0,
-      icu: 0,
       svgWidth: 0,
       svgHeight: 500,
       svgPadding: {
@@ -46,6 +52,7 @@ export default {
   },
   mounted() {
     this.drawChart();
+    this.initTooltip();
   },
   methods: {
     drawChart() {
@@ -57,16 +64,6 @@ export default {
       this.drawXAxis();
       this.drawYAxis();
       this.drawBars();
-      this.updateNumbers();
-    },
-    updateNumbers() {
-      if (this.selectedState == "") {
-        this.cases = -1;
-        this.icu = -1;
-      } else {
-        this.cases = this.covidDataByCountry(this.selectedState).cases;
-        this.icu = this.covidDataByCountry(this.selectedState).icu;
-      }
     },
     drawXAxis() {
       d3.select(this.$refs.axisX)
@@ -108,11 +105,11 @@ export default {
       let color = this.colorMap.get(this.selectedState);
       if (color == "white") color = "red";
       const filteredData = [
-        { name: "poverty", value: countryData.poverty },
-        { name: "diabetes", value: countryData.diabetes },
-        { name: "cardiovascular", value: countryData.cardiovascular },
-        { name: "smokers", value: countryData.smokers },
-        { name: "development", value: countryData.development_index_inverse },
+        { name: "Poverty", value: countryData.poverty_rate },
+        { name: "Diabetes", value: countryData.diabetes_rate },
+        { name: "CV Death", value: countryData.cardiovascular_rate },
+        { name: "Smokers", value: countryData.smokers_rate },
+        { name: "Inverse HDI", value: countryData.development_index_inverse },
       ];
 
       barsGroup
@@ -131,7 +128,10 @@ export default {
             this.svgPadding.top -
             this.svgPadding.bottom -
             this.yScale(d.value)
-        );
+        )
+        .on("mouseover", this.showTooltip)
+        .on("mousemove", this.moveTooltip)
+        .on("mouseout", this.hideTooltip);
 
       // https://stackoverflow.com/questions/42491106/add-labels-to-bar-chart-d3
       barsGroup
@@ -139,12 +139,63 @@ export default {
         .data(filteredData)
         .join("text")
         .attr("class", "bar-label")
-        // .append("text")
         .attr("fill", "black")
-        .attr("x", (d) => this.xScale(d.name) + this.xScale.bandwidth() / 4)
+        .attr("x", (d) => this.xScale(d.name) + 5)
         .attr("y", (d) => this.yScale(d.value) - 20)
+        .attr("text-anchor", "start")
         .attr("dy", ".8em")
-        .text((d) => (d.value * 100).toFixed(1) + "%");
+        .text((d) =>
+          d.value == 0 ? "No Data" : (d.value * 100).toFixed(1) + "%"
+        );
+    },
+    initTooltip() {
+      d3.select("#barTooltip").remove();
+      // the idea of how to use tooltips was inspired by this website, but heavily changed to my own needs
+      // https://bl.ocks.org/d3noob/a22c42db65eb00d4e369
+      d3.select("body").append("div").attr("id", "barTooltip");
+    },
+    showTooltip(event) {
+      const stateName = this.selectedState;
+      const stateyData = this.covidDataByCountry(stateName);
+      const poverty = stateyData.poverty;
+      const diabetes = stateyData.diabetes;
+      const cardiovascular = stateyData.cardiovascular;
+      const smokers = stateyData.smokers;
+      const development = 1 - stateyData.development_index_inverse;
+
+      const displayedText = `
+        <b>${stateName}</b></br>
+       Extreme Poverty: ${
+         poverty == 0 ? "No Data" : `${poverty.toFixed(2)}%`
+       }</br>
+        Diabetes Prevelance: ${
+          diabetes == 0 ? "No Data" : diabetes.toFixed(1)
+        }%</br>
+        Cardiovascular Death Rate: ${
+          cardiovascular == 0 ? "No Data" : cardiovascular.toFixed(0)
+        }</br>
+        Share of Smokers: ${smokers == 0 ? "No Data" : smokers.toFixed(0)}%</br>
+        Human Development Index: ${
+          development == 0 ? "No Data" : development.toFixed(2)
+        }</br>`;
+
+      const div = d3.select("#barTooltip").style("opacity", 0);
+      div.transition().duration(150).style("opacity", 0.95);
+
+      div
+        .html(displayedText)
+        .style("left", `${event.pageX + 50}px`)
+        .style("top", `${event.pageY - 30}px`)
+        .style("display", "block");
+    },
+    moveTooltip(event) {
+      d3.select("#barTooltip")
+        .style("left", `${event.pageX - 280}px`)
+        .style("top", `${event.pageY - 170}px`);
+    },
+    hideTooltip() {
+      const div = d3.select("#barTooltip").style("opacity", 0.95);
+      div.transition().duration(300).style("opacity", 0);
     },
   },
 
@@ -162,13 +213,7 @@ export default {
           0,
           this.svgWidth - this.svgPadding.left - this.svgPadding.right,
         ])
-        .domain([
-          "poverty",
-          "diabetes",
-          "cardiovascular",
-          "smokers",
-          "development",
-        ])
+        .domain(["Poverty", "Diabetes", "CV Death", "Smokers", "Inverse HDI"])
         .padding(0.5);
     },
     yScale() {
@@ -207,5 +252,21 @@ export default {
 .y-text {
   font-size: 14px;
   fill: black;
+}
+
+#barTooltip {
+  position: absolute;
+  text-align: center;
+  width: 250px;
+  height: 145px;
+  background: lightgrey;
+  border-radius: 10px;
+  padding: 5px;
+  font-size: 14px;
+  opacity: 0;
+  display: none;
+}
+.tooltip .tooltip-inner {
+  max-width: 400px;
 }
 </style>

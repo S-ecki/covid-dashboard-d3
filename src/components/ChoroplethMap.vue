@@ -1,8 +1,12 @@
 <template>
   <div class="vis-component" ref="vis">
-    <b-button size="lg" variant="primary" disabled class="mb-2">
-      <b-icon icon="question-circle-fill" aria-label="Help"></b-icon>
-    </b-button>
+    <div class="info-text" v-if="cases != -1">
+      Infections per Million:
+      {{ cases == 0 ? "No data" : cases.toFixed(0) }}
+    </div>
+    <div class="info-text" v-if="icu != -1">
+      ICU per Million: {{ icu == 0 ? "No data" : icu.toFixed(1) }}
+    </div>
     <svg class="main-svg" :width="svgWidth" :height="svgHeight">
       <g class="bg" ref="bg"></g>
       <!-- Legend and JS code that goes along with it inspired by: https://observablehq.com/@d3/bivariate-choropleth -->
@@ -12,28 +16,6 @@
         transform="translate(80,80) rotate(315)"
       ></g>
       <g class="choropleth-map" ref="map"></g>
-      <!-- http://thenewcode.com/1068/Making-Arrows-in-SVG -->
-      <!-- <defs>
-        <marker
-          id="arrowhead"
-          markerWidth="10"
-          markerHeight="7"
-          refX="0"
-          refY="3.5"
-          orient="auto"
-        >
-          <polygon points="0 0, 10 3.5, 0 7" />
-        </marker>
-      </defs>
-      <line
-        x1="0"
-        y1="50"
-        x2="90"
-        y2="50"
-        stroke="#000"
-        stroke-width="3"
-        marker-end="url(#arrowhead)"
-      /> -->
     </svg>
   </div>
 </template>
@@ -49,6 +31,8 @@ export default {
   props: {},
   data() {
     return {
+      cases: 0,
+      icu: 0,
       svgWidth: 500,
       svgHeight: 600,
       svgPadding: {
@@ -72,6 +56,7 @@ export default {
       this.transformSVG();
       this.drawMap();
       this.addBackground();
+      this.updateNumbers();
     },
 
     transformSVG() {
@@ -79,6 +64,16 @@ export default {
         "transform",
         `translate(${this.svgPadding.left},${this.svgPadding.top})`
       );
+    },
+
+    updateNumbers() {
+      if (this.selectedState == "") {
+        this.cases = -1;
+        this.icu = -1;
+      } else {
+        this.cases = this.covidDataByCountry(this.selectedState).cases;
+        this.icu = this.covidDataByCountry(this.selectedState).icu;
+      }
     },
 
     drawMap() {
@@ -114,6 +109,7 @@ export default {
           this.$store.commit("changeSelectedState", d.properties.name);
         })
         .on("mouseover", this.showTooltip)
+        .on("mousemove", this.moveTooltip)
         .on("mouseout", this.hideTooltip);
 
       // todo fix this
@@ -157,7 +153,7 @@ export default {
       d3.select("#mapTooltip").remove();
       // the idea of how to use tooltips was inspired by this website, but heavily changed to my own needs
       // https://bl.ocks.org/d3noob/a22c42db65eb00d4e369
-      d3.select("body").append("div").attr("id", "mapTooltip").class("tooltip");
+      d3.select("body").append("div").attr("id", "mapTooltip");
     },
     showTooltip(event, data) {
       const stateName = data.properties.name;
@@ -170,12 +166,17 @@ export default {
       div
         .html(
           `<b>${stateName}</b> <br>
-        Infections / Million: ${casesOfState} <br>
-        ICU beds / Million: ${icuOfState == 0 ? "No Data" : icuOfState}`
+        Infections per Million: ${casesOfState} <br>
+        ICU Patients per Million: ${icuOfState == 0 ? "No Data" : icuOfState}`
         )
-        .style("left", `${event.pageX - 40}px`)
-        .style("top", `${event.pageY + 40}px`)
+        .style("left", `${event.pageX - 230}px`)
+        .style("top", `${event.pageY - 110}px`)
         .style("display", "block");
+    },
+    moveTooltip(event) {
+      d3.select("#mapTooltip")
+        .style("left", `${event.pageX - 230}px`)
+        .style("top", `${event.pageY - 110}px`);
     },
     hideTooltip() {
       const div = d3.select("#mapTooltip").style("opacity", 0.95);
@@ -199,14 +200,12 @@ export default {
 
       d3.select(this.$refs.legend)
         .append("text")
-        .text("ICU Beds")
+        .text("ICU Patients")
         .attr("transform", "rotate(90)")
-        .attr("x", rectSize + 5)
-        .attr("y", rectSize - 5)
+        .attr("x", rectSize + 15)
+        .attr("y", rectSize - 8)
         .attr("text-anchor", "middle")
         .attr("fill", "black");
-
-      d3.select(this.$refs.legend);
     },
     appendRect(xInd, yInd) {
       const rectSize = 30;
@@ -307,10 +306,11 @@ export default {
   position: absolute;
   padding: 4px;
   text-align: center;
-  width: 180px;
+  width: 225px;
   height: 80px;
   background: lightgrey;
-  border-radius: 5px;
+  border-radius: 10px;
+  padding: 5px;
   font-size: 14px;
   opacity: 0;
   display: none;

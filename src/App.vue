@@ -1,22 +1,22 @@
 <template>
   <div id="app">
     <b-container fluid>
-      <b-row md="2">
+      <b-row md="2" class="p-2">
         <Dropdown />
       </b-row>
       <b-row md="5">
-        <b-col md="7">
+        <b-col md="7" class="pr-1">
           <Scatterplot />
         </b-col>
-        <b-col md="5">
+        <b-col md="5" class="pr-1">
           <StackedBarChart />
         </b-col>
       </b-row>
       <b-row md="5">
-        <b-col md="7">
+        <b-col md="7" class="pt-4">
           <ChoroplethMap />
         </b-col>
-        <b-col md="5">
+        <b-col md="5" class="pr-1 pt-4">
           <BarChart />
         </b-col>
       </b-row>

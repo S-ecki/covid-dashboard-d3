@@ -1,23 +1,43 @@
 <template>
   <div class="vis-component" ref="chart">
     <div class="stacked-bar-chart">
-      <div
-        class="dropdown"
-        v-b-tooltip.html
-        title="Select an area to compare the vaccination rate with!"
-      >
-        <select class="form-control" v-model="comparisonCountry" height="200px">
-          <option value="Europe Average">Europe Average</option>
-          <option v-for="country in countries" :key="country.state">
-            {{ country.state }}
-          </option>
-        </select>
-      </div>
+      <b-container>
+        <b-row align-h="center" align-v="top">
+          <div class="Title pb-4 pr-2">Vaccination Rates per Dose</div>
+          <div
+            v-b-tooltip.html
+            title="Vaccination Rates per Dose of the <b>Focus Country</b>
+            can be compared to another selected Area."
+          >
+            <b-icon icon="question-circle"></b-icon>
+          </div>
+        </b-row>
+        <b-row align-h="left" align-v="center" class="pl-5 pb-1">
+          <div>Comparison Area:</div>
+          <div
+            class="dropdown pl-2"
+            v-b-tooltip.html
+            title="The comparison is only actived when a Focus Country is selected!"
+          >
+            <select
+              class="form-control"
+              v-model="comparisonCountry"
+              height="200px"
+            >
+              <option value="Europe Average">Europe Average</option>
+              <option v-for="country in countries" :key="country.state">
+                {{ country.state }}
+              </option>
+            </select>
+          </div>
+        </b-row>
+      </b-container>
       <svg id="main-svg" :width="svgWidth" :height="svgHeight">
         <g class="chart-group" ref="chartGroup">
           <g class="axis axis-x" ref="stackedAxisX"></g>
           <g class="axis axis-y" ref="stackedAxisY"></g>
           <g class="stacked-bars-group" ref="stackedBarsGroup"></g>
+          <g class="legend-group" ref="legendGroup"></g>
         </g>
       </svg>
     </div>
@@ -36,8 +56,9 @@ export default {
       comparisonCountry: "Europe Average",
       doses: ["vax", "vax_full", "vax_booster"],
       countries: [],
+      colors: ["#1A4314", "#2C5E1A", "#B2D2A4"],
       svgWidth: 500,
-      svgHeight: 560,
+      svgHeight: 510,
       svgPadding: {
         top: 20,
         right: 20,
@@ -49,6 +70,7 @@ export default {
   mounted() {
     this.initTooltip();
     this.drawChart();
+    this.drawLegend();
   },
   methods: {
     drawChart() {
@@ -80,7 +102,7 @@ export default {
         .attr("x", 20)
         .attr("y", -20)
         .attr("dy", "0.5em")
-        .text("Percent of Population Vaccinated per Dose");
+        .text("Percent of Population Vaccinated, per Dose");
     },
     drawYAxis() {
       d3.select(this.$refs.stackedAxisY)
@@ -90,19 +112,41 @@ export default {
         .attr("y", -15)
         .attr("class", "stacked-y-labels");
     },
+    drawLegend() {
+      for (let i = 0; i < 3; i++) {
+        this.drawCircle(i);
+      }
+      this.drawText(0, "Population with 1 Vaccine Dose");
+      this.drawText(1, "Population with 2 Vaccine Doses");
+      this.drawText(2, "Population with Booster");
+    },
+    drawCircle(index) {
+      d3.select(this.$refs.legendGroup)
+        .append("circle")
+        .attr("cx", 30)
+        .attr("cy", 10 + index * 20)
+        .attr("r", 6)
+        .style("fill", this.colors[index]);
+    },
+    drawText(index, text) {
+      d3.select(this.$refs.legendGroup)
+        .append("text")
+        .attr("x", 50)
+        .attr("y", 10 + index * 20)
+        .text(text)
+        .style("font-size", "15px")
+        .attr("alignment-baseline", "middle");
+    },
     // https://www.d3-graph-gallery.com/graph/barplot_stacked_basicWide.html
     drawBars() {
       const barsGroup = d3.select(this.$refs.stackedBarsGroup);
       barsGroup.selectAll(".stacked-bar").remove();
-      if (this.covidData.length == 0) {
+      if (this.selectedState == "") {
         return;
       }
       const country = this.covidDataByCountry(this.selectedState);
-      const vaxData = [];
+      const vaxData = [this.vaxDataFromCountry(country)];
 
-      if (this.selectedState != "") {
-        vaxData.push(this.vaxDataFromCountry(country));
-      }
       this.comparisonCountry == "Europe Average"
         ? vaxData.push(this.vaxDataEurope())
         : vaxData.push(
@@ -120,15 +164,16 @@ export default {
         .join("g")
         .attr("class", "stacked-bar")
         .attr("fill", (d) => this.colorPalette()(d.key))
-        .on("mouseover", this.showTooltip)
-        .on("mouseout", this.hideTooltip)
         .selectAll("rect")
         .data((d) => d)
         .join("rect")
         .attr("y", (d) => this.yScale(d.data.group) + 10)
         .attr("x", (d) => this.xScale(d[0]))
         .attr("width", (d) => this.xScale(d[1]) - this.xScale(d[0]))
-        .attr("height", this.yScale.bandwidth() - 20);
+        .attr("height", this.yScale.bandwidth() - 20)
+        .on("mouseover", this.showTooltip)
+        .on("mouseout", this.hideTooltip)
+        .on("mousemove", this.moveTooltip);
     },
     vaxDataFromCountry(country) {
       const noData = country.vax == 0;
@@ -148,34 +193,48 @@ export default {
       };
     },
     colorPalette() {
-      return d3
-        .scaleOrdinal()
-        .domain(this.doses)
-        .range(["#1A4314", "#2C5E1A", "#B2D2A4"]);
+      return d3.scaleOrdinal().domain(this.doses).range(this.colors);
     },
 
     initTooltip() {
       d3.select("#stackedTooltip").remove();
       // the idea of how to use tooltips was inspired by this website, but heavily changed to my own needs
       // https://bl.ocks.org/d3noob/a22c42db65eb00d4e369
-      d3.select("body")
-        .append("div")
-        .attr("id", "stackedTooltip")
-        .class("tooltip");
+      d3.select("body").append("div").attr("id", "stackedTooltip");
     },
     showTooltip(event, data) {
-      // const stateName = data.properties.name;
-      // const casesOfState = this.covidDataByCountry(stateName).cases.toFixed(0);
-      // const icuOfState = this.covidDataByCountry(stateName).icu.toFixed(1);
+      const stateName = data.data.group;
+      const vaxOnce = data.data.vax.toFixed(1);
+      const vaxFull = data.data.vax_full.toFixed(1);
+      const vaxBooster = data.data.vax_booster.toFixed(1);
+      const vax_none = (
+        100 -
+        data.data.vax -
+        data.data.vax_full -
+        data.data.vax_booster
+      ).toFixed(1);
+
+      const displayedText = `
+      <b>${stateName}</b></br>
+        Population with 1 Vaccine Dose: ${vaxOnce}%
+        Population with 2 Vaccine Doses: ${vaxFull}%
+        Population with 3 Vaccine Doses: ${vaxBooster}%
+        Population without Vaccinations: ${vax_none}%
+        `;
 
       const div = d3.select("#stackedTooltip").style("opacity", 0);
       div.transition().duration(150).style("opacity", 0.95);
-      console.log(data);
       div
-        .html("hey")
-        .style("left", `${event.pageX - 40}px`)
-        .style("top", `${event.pageY + 40}px`)
+        .html(displayedText)
+        .style("left", `${event.pageX - 300}px`)
+        .style("top", `${event.pageY - 120}px`)
         .style("display", "block");
+    },
+    moveTooltip(event) {
+      const div = d3.select("#stackedTooltip");
+      div
+        .style("left", `${event.pageX - 300}px`)
+        .style("top", `${event.pageY - 120}px`);
     },
     hideTooltip() {
       const div = d3.select("#stackedTooltip").style("opacity", 0.95);
@@ -205,8 +264,6 @@ export default {
       let domainArray = [];
       if (this.selectedState != "") {
         domainArray.push(this.selectedState);
-        domainArray.push(this.comparisonCountry);
-      } else {
         domainArray.push(this.comparisonCountry);
       }
 
@@ -262,12 +319,12 @@ export default {
 }
 #stackedTooltip {
   position: absolute;
-  padding: 4px;
   text-align: center;
-  width: 180px;
-  height: 80px;
+  width: 280px;
+  height: 120px;
   background: lightgrey;
-  border-radius: 5px;
+  border-radius: 10px;
+  padding: 5px;
   font-size: 14px;
   opacity: 0;
   display: none;

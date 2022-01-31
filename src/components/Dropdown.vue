@@ -1,7 +1,7 @@
 <template>
   <div class="dropdown">
     <select class="form-control" v-model="selectedState">
-      <option value="">Choose a Country</option>
+      <option value="">Choose a Focus Country</option>
       <option v-for="country in countries" :key="country.state">
         {{ country.state }}
       </option>
