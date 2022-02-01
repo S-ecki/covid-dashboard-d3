@@ -60,7 +60,7 @@ const store = new Vuex.Store({
           poverty: +state.extreme_poverty,
           diabetes: +state.diabetes_prevalence,
           cardiovascular: +state.cardiovasc_death_rate,
-          smokers: +state.male_smokers + +state.female_smokers,
+          smokers: (+state.male_smokers + +state.female_smokers) / 2,
           development_index: +state.human_development_index,
           deaths: +state.total_deaths_per_million,
           vax: +state.people_vaccinated_per_hundred,

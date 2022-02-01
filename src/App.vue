@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <b-container fluid>
-      <b-row class="p-3 bg-dark">
+      <b-row class="pt-3 pb-3 pl-1 pr-1 bg-dark">
         <Dropdown />
       </b-row>
       <b-row class="pt-4">

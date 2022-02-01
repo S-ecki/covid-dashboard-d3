@@ -142,13 +142,11 @@ export default {
         .join("text")
         .attr("class", "bar-label")
         .attr("fill", "black")
-        .attr("x", (d) => this.xScale(d.name) + 5)
+        .attr("x", (d) => this.xScale(d.name) + 3)
         .attr("y", (d) => this.yScale(d.value) - 20)
         .attr("text-anchor", "start")
         .attr("dy", ".8em")
-        .text((d) =>
-          d.value == 0 ? "No Data" : (d.value * 100).toFixed(1) + "%"
-        );
+        .text((d) => (d.value == 0 ? "No Data" : ""));
     },
     // the idea of how to use tooltips was inspired by following 2 websites, but heavily changed to my own needs
     // https://bl.ocks.org/d3noob/a22c42db65eb00d4e369
