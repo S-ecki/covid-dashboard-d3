@@ -74,7 +74,30 @@ export default {
       this.drawChart();
       this.addBackground();
     },
-
+    transformSVGs() {
+      d3.select(this.$refs.chartGroup).attr(
+        "transform",
+        `translate(${this.svgPadding.left},${this.svgPadding.top})`
+      );
+      d3.select(this.$refs.scatterGroup).attr(
+        "transform",
+        `translate(${this.svgPadding.left},${this.svgPadding.top})`
+      );
+      d3.select(this.$refs.brushGroup).attr(
+        "transform",
+        `translate(${this.svgPadding.left},${this.svgPadding.top})`
+      );
+    },
+    addBackground() {
+      d3.select(this.$refs.bg)
+        .append("rect")
+        .attr("width", this.svgWidth)
+        .attr("height", this.svgHeight)
+        .attr("style", `fill:transparent;`)
+        .on("click", () => {
+          this.$store.commit("clearStateSelection");
+        });
+    },
     drawChart() {
       d3.selectAll("#scatterLabel").remove();
       this.drawXAxis();
@@ -82,7 +105,6 @@ export default {
       this.drawScatter();
       this.drawLegend();
     },
-
     drawXAxis() {
       const xAxis = d3.axisBottom(this.xScale).tickFormat((data) => `${data}%`);
 
@@ -123,16 +145,6 @@ export default {
         .style("opacity", this.showCases ? 1 : 0.5)
         .on("click", this.toggleCases);
       d3.select(this.$refs.legendGroup)
-        .append("text")
-        .attr("class", "scatter-legend")
-        .attr("x", 50)
-        .attr("y", 10)
-        .text("New Infections per 1 Million People")
-        .style("font-size", "15px")
-        .style("fill", this.showCases ? "black" : "grey")
-        .attr("alignment-baseline", "middle")
-        .on("click", this.toggleCases);
-      d3.select(this.$refs.legendGroup)
         .append("rect")
         .attr("class", "scatter-legend")
         .attr("x", 24)
@@ -142,16 +154,30 @@ export default {
         .style("fill", this.colors[1])
         .style("opacity", this.showDeaths ? 1 : 0.5)
         .on("click", this.toggleDeaths);
+      this.legendText(
+        0,
+        "New Infections per 1 Million People",
+        this.showCases,
+        this.toggleCases
+      );
+      this.legendText(
+        1,
+        "Deaths per 1 Million People",
+        this.showDeaths,
+        this.toggleDeaths
+      );
+    },
+    legendText(index, text, showBool, toggle) {
       d3.select(this.$refs.legendGroup)
         .append("text")
         .attr("class", "scatter-legend")
         .attr("x", 50)
-        .attr("y", 10 + 20)
-        .text("Deaths per 1 Million People")
+        .attr("y", 10 + index * 20)
+        .text(text)
         .style("font-size", "15px")
-        .style("fill", this.showDeaths ? "black" : "grey")
+        .style("fill", showBool ? "black" : "grey")
         .attr("alignment-baseline", "middle")
-        .on("click", this.toggleDeaths);
+        .on("click", toggle);
     },
     toggleCases() {
       this.showCases = !this.showCases;
@@ -172,6 +198,7 @@ export default {
         data = this.covidData;
       }
 
+      // dont filter deaths == 0 as this is a valid number for some countries
       data = data.filter((d) => d.cases > 0 && d.vax > 0);
 
       if (data.length == 0) {
@@ -190,9 +217,7 @@ export default {
           .attr("id", (d) => `scatter-cases-${d.cases.toFixed(0)}`)
           .attr("fill", this.colors[0])
           .attr("stroke", "black")
-          .attr("stroke-width", (d) =>
-            this.selectedState == d.state ? "0.5" : "0"
-          )
+          .attr("stroke-width", 0)
           .attr("cx", (d) => this.xScale(d.vax))
           .attr("cy", (d) => this.yScale(d.cases))
           .attr("r", 3)
@@ -224,11 +249,11 @@ export default {
           });
       }
     },
-
+    // the idea of how to use tooltips was inspired by following 2 websites, but heavily changed to my own needs
+    // https://bl.ocks.org/d3noob/a22c42db65eb00d4e369
+    // https://www.d3-graph-gallery.com/graph/interactivity_tooltip.html
     initTooltip() {
       d3.select("#scatterTooltip").remove();
-      // the idea of how to use tooltips was inspired by this website, but heavily changed to my own needs
-      // https://bl.ocks.org/d3noob/a22c42db65eb00d4e369
       d3.select("body").append("div").attr("id", "scatterTooltip");
     },
     showTooltip(event, data) {
@@ -254,11 +279,11 @@ export default {
 
       d3.select(`#scatter-cases-${cases}`)
         .attr("stroke-width", "1")
-        .attr("r", 4);
+        .attr("r", 5);
       d3.select(`#scatter-deaths-${cases}`)
         .attr("stroke-width", "1")
-        .attr("width", 8)
-        .attr("height", 8);
+        .attr("width", 9)
+        .attr("height", 9);
       this.hoveredID = cases;
     },
     moveTooltip(event) {
@@ -279,33 +304,6 @@ export default {
         .attr("width", 6)
         .attr("height", 6);
       this.hoveredID = "";
-    },
-
-    transformSVGs() {
-      d3.select(this.$refs.chartGroup).attr(
-        "transform",
-        `translate(${this.svgPadding.left},${this.svgPadding.top})`
-      );
-      d3.select(this.$refs.scatterGroup).attr(
-        "transform",
-        `translate(${this.svgPadding.left},${this.svgPadding.top})`
-      );
-      d3.select(this.$refs.brushGroup).attr(
-        "transform",
-        `translate(${this.svgPadding.left},${this.svgPadding.top})`
-      );
-    },
-
-    addBackground() {
-      // add transparent rect "behind" map with onClick handler unselecting everything
-      d3.select(this.$refs.bg)
-        .append("rect")
-        .attr("width", this.svgWidth)
-        .attr("height", this.svgHeight)
-        .attr("style", `fill:transparent;`)
-        .on("click", () => {
-          this.$store.commit("clearStateSelection");
-        });
     },
   },
 

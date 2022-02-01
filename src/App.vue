@@ -55,8 +55,4 @@ export default {
   color: #000000;
   margin-top: 20px;
 }
-
-#app .h5 {
-  margin-top: 0;
-}
 </style>

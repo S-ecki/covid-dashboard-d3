@@ -49,8 +49,10 @@ const store = new Vuex.Store({
     loadData({ state }) {
 
       d3.csv('./owid-covid-latest.csv').then((data) => {
+        // only consider european countries
         const europeData = data.filter(data => data.continent == 'Europe');
 
+        // filter for attributes to are shown
         const filteredData = europeData.map(state => ({
           state: state.location,
           cases: +state.new_cases_per_million,
@@ -72,7 +74,7 @@ const store = new Vuex.Store({
         const maxSmokers = d3.max(filteredData, d => d.smokers);
 
 
-        // normalize poverty, diabetes, smokers and cardiovascular with max values
+        // aggregate shown values
         state.covidData = filteredData.map(d => ({
           state: d.state,
           cases: d.cases,

@@ -21,7 +21,6 @@
     </b-container>
     <svg class="main-svg" :width="svgWidth" :height="svgHeight">
       <g class="bg" ref="bg"></g>
-      <!-- Legend and JS code that goes along with it inspired by: https://observablehq.com/@d3/bivariate-choropleth -->
       <g class="legend" ref="legend"></g>
       <g class="choropleth-map" ref="map"></g>
     </svg>
@@ -67,14 +66,12 @@ export default {
       this.updateNumbers();
       this.drawLegend();
     },
-
     transformSVG() {
       d3.select(this.$refs.map).attr(
         "transform",
         `translate(${this.svgPadding.left},${this.svgPadding.top})`
       );
     },
-
     updateNumbers() {
       if (this.selectedState == "") {
         this.cases = -1;
@@ -84,7 +81,6 @@ export default {
         this.icu = this.covidDataByCountry(this.selectedState).icu;
       }
     },
-
     drawMap() {
       const path = this.getGeopath();
 
@@ -95,7 +91,7 @@ export default {
         .join("path")
         .attr("d", path)
         .attr("stroke", "white")
-        .attr("stroke-width", "0.3")
+        .attr("stroke-width", "0.75")
         .attr("fill", (d) => {
           if (this.selectedState == "") {
             return this.colorMap.get(d.properties.name);
@@ -103,7 +99,7 @@ export default {
           if (this.selectedState == d.properties.name) {
             return this.colorMap.get(d.properties.name);
           } else {
-            return "#d3d3d3";
+            return "#d3d3d3dd";
           }
         })
         .on("click", (_, d) => {
@@ -112,24 +108,15 @@ export default {
         .on("mouseover", this.showTooltip)
         .on("mousemove", this.moveTooltip)
         .on("mouseout", this.hideTooltip);
-
-      // todo fix this
-      // const incompleteStates = this.covidData
-      //   .filter((d) => d.icuIncomplete)
-      //   .map((d) => d.state);
-
-      // for (var state of incompleteStates) {
-      //   d3.select(`#${state}`).remove();
-      // }
     },
     getGeopath() {
       return d3.geoPath().projection(this.getProjection());
     },
     getProjection() {
       return (
-        d3 // this projection was chosen due to the recommendation during the tutorial
+        // the next lines were copied from the following link to display Europe properly: https://observablehq.com/@toja/five-map-projections-for-europe#_albers
+        d3
           .geoAlbers()
-          // the next lines were copied from the following link to display Europe properly: https://observablehq.com/@toja/five-map-projections-for-europe#_albers
           .rotate([-15, 0.0])
           .center([0, 52.0])
           .parallels([55.0, 65.0])
@@ -149,11 +136,11 @@ export default {
           this.$store.commit("clearStateSelection");
         });
     },
-
+    // the idea of how to use tooltips was inspired by following 2 websites, but heavily changed to my own needs
+    // https://bl.ocks.org/d3noob/a22c42db65eb00d4e369
+    // https://www.d3-graph-gallery.com/graph/interactivity_tooltip.html
     initTooltip() {
       d3.select("#mapTooltip").remove();
-      // the idea of how to use tooltips was inspired by this website, but heavily changed to my own needs
-      // https://bl.ocks.org/d3noob/a22c42db65eb00d4e369
       d3.select("body").append("div").attr("id", "mapTooltip");
     },
     showTooltip(event, data) {
@@ -184,10 +171,9 @@ export default {
       div.transition().duration(300).style("opacity", 0);
     },
 
-    // https://observablehq.com/@d3/bivariate-choropleth
+    // Creating the legend was inspired by following website and changed for my needs: https://observablehq.com/@d3/bivariate-choropleth
     drawLegend() {
       d3.selectAll(".map-legend").remove();
-      // const rectDiagonal = Math.sqrt(2 * this.rectSize * this.rectSize);
       d3.select(this.$refs.legend).attr(
         "transform",
         `translate(${this.svgWidth - 4 * this.rectSize},${this.svgPadding.top})`
@@ -200,7 +186,6 @@ export default {
       }
 
       this.drawText();
-      // this.drawNoDataLegend();
     },
     drawText() {
       d3.select(this.$refs.legend)
@@ -222,30 +207,6 @@ export default {
         .attr("font-size", "14px")
         .attr("fill", "black");
     },
-    // drawNoDataLegend() {
-    //   // const rectDiagonal = Math.sqrt(2 * this.rectSize * this.rectSize);
-    //   const x = this.svgWidth - 5.5 * this.rectSize;
-    //   const y = this.svgPadding.top + this.rectSize * 4 - 10;
-    //   const rectSize = this.rectSize - 8;
-
-    //   d3.select(this.$refs.map)
-    //     .append("rect")
-    //     .attr("class", "map-legend")
-    //     .attr("x", x)
-    //     .attr("y", y)
-    //     .attr("width", rectSize)
-    //     .attr("height", rectSize)
-    //     .style("fill", this.noDataColor);
-
-    //   d3.select(this.$refs.map)
-    //     .append("text")
-    //     .text("Missing Data")
-    //     .attr("class", "map-legend")
-    //     .attr("x", x + rectSize + 10)
-    //     .attr("y", y + rectSize - 6)
-    //     .attr("font-size", "14px")
-    //     .attr("fill", "black");
-    // },
     appendRect(xInd, yInd) {
       const color = bivariate_colors[xInd][yInd];
 
@@ -258,10 +219,6 @@ export default {
         .attr("height", this.rectSize)
         .attr("style", `fill:${color};`);
     },
-
-    // this fills up the Map in the store, which saves the colors
-    // each state should be highlighted on the choropleth map when selected
-    // gets called every time eduRate/ persIncome change
     fillColorMap() {
       let colorMap = new Map();
 
@@ -271,15 +228,12 @@ export default {
       }
       this.$store.commit("setColorMap", colorMap);
     },
-
     // returns hex code that the state should be highlighted with
     getColorForDatapoint(cases, icu) {
       const x = this.getXColorIndex(cases);
       const y = this.getYColorIndex(icu);
       return bivariate_colors[x][y];
     },
-
-    // todo fix this
     // determines the x-"index" of the field the datapoint is on
     // the left column is be 0, middle 1 and right 2
     getXColorIndex(cases) {
@@ -289,11 +243,7 @@ export default {
         .range(d3.range(3));
 
       return scale(cases);
-
-      // const xColorIndex = Math.floor(scale(cases) * 3);
-      // return xColorIndex == 3 ? xColorIndex - 1 : xColorIndex;
     },
-
     // determines the y-"index" of the field the datapoint is on
     // the left row is be 0, middle 1 and right 2
     getYColorIndex(icu) {
@@ -303,9 +253,6 @@ export default {
         .range(d3.range(3));
 
       return 3 - scale(icu);
-
-      // const yColorIndex = 2 - Math.floor(scale(icu) * 3);
-      // return yColorIndex == -1 ? 0 : yColorIndex;
     },
   },
   computed: {

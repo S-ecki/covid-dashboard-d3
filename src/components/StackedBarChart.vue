@@ -27,7 +27,7 @@
               v-model="comparisonCountry"
               height="200px"
             >
-              <option value="Europe Average">Europe Average</option>
+              <option value="European Average">European Average</option>
               <option v-for="country in countries" :key="country.state">
                 {{ country.state }}
               </option>
@@ -56,12 +56,12 @@ export default {
   props: {},
   data() {
     return {
-      comparisonCountry: "Europe Average",
+      comparisonCountry: "European Average",
       doses: ["vax", "vax_full", "vax_booster"],
       countries: [],
       colors: ["#1A4314", "#2C5E1A", "#B2D2A4"],
       svgWidth: 500,
-      svgHeight: 455,
+      svgHeight: 452,
       svgPadding: {
         top: 20,
         right: 20,
@@ -99,6 +99,7 @@ export default {
         .attr("class", "stacked-labels")
         .attr("y", 12);
 
+      // axis label
       d3.select(this.$refs.stackedAxisX)
         .append("text")
         .attr("class", "stacked-y-text")
@@ -140,17 +141,19 @@ export default {
         .style("font-size", "15px")
         .attr("alignment-baseline", "middle");
     },
-    // https://www.d3-graph-gallery.com/graph/barplot_stacked_basicWide.html
+    // I created the StackedBars with the help of this website: https://www.d3-graph-gallery.com/graph/barplot_stacked_basicWide.html
     drawBars() {
       const barsGroup = d3.select(this.$refs.stackedBarsGroup);
       barsGroup.selectAll(".stacked-bar").remove();
+
       if (this.selectedState == "") {
         return;
       }
+
       const country = this.covidDataByCountry(this.selectedState);
       const vaxData = [this.vaxDataFromCountry(country)];
 
-      this.comparisonCountry == "Europe Average"
+      this.comparisonCountry == "European Average"
         ? vaxData.push(this.vaxDataEurope())
         : vaxData.push(
             this.vaxDataFromCountry(
@@ -192,17 +195,18 @@ export default {
         vax: this.vax_average - this.vax_full_average,
         vax_full: this.vax_full_average - this.vax_booster_average,
         vax_booster: this.vax_booster_average,
-        group: "Europe Average",
+        group: "European Average",
       };
     },
     colorPalette() {
       return d3.scaleOrdinal().domain(this.doses).range(this.colors);
     },
 
+    // the idea of how to use tooltips was inspired by following 2 websites, but heavily changed to my own needs
+    // https://bl.ocks.org/d3noob/a22c42db65eb00d4e369
+    // https://www.d3-graph-gallery.com/graph/interactivity_tooltip.html
     initTooltip() {
       d3.select("#stackedTooltip").remove();
-      // the idea of how to use tooltips was inspired by this website, but heavily changed to my own needs
-      // https://bl.ocks.org/d3noob/a22c42db65eb00d4e369
       d3.select("body").append("div").attr("id", "stackedTooltip");
     },
     showTooltip(event, data) {
@@ -311,7 +315,6 @@ export default {
 
 .stacked-y-labels {
   font-size: 12px;
-  /* font-weight: bold; */
   text-anchor: middle;
 }
 

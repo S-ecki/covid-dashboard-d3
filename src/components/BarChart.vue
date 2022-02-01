@@ -100,13 +100,12 @@ export default {
       const barsGroup = d3.select(this.$refs.barsGroup);
       barsGroup.selectAll(".bar-label").remove();
       barsGroup.selectAll(".bar").remove();
-      if (this.selectedState == "") {
-        return;
-      }
+
+      if (this.selectedState == "") return;
 
       const countryData = this.covidDataByCountry(this.selectedState);
-      let color = this.colorMap.get(this.selectedState);
-      if (color == "white") color = "red";
+      const color = this.colorMap.get(this.selectedState);
+
       const filteredData = [
         { name: "Poverty", value: countryData.poverty_rate },
         { name: "Diabetes", value: countryData.diabetes_rate },
@@ -136,7 +135,7 @@ export default {
         .on("mousemove", this.moveTooltip)
         .on("mouseout", this.hideTooltip);
 
-      // https://stackoverflow.com/questions/42491106/add-labels-to-bar-chart-d3
+      // I created the labels with help of this question: https://stackoverflow.com/questions/42491106/add-labels-to-bar-chart-d3
       barsGroup
         .selectAll(".text")
         .data(filteredData)
@@ -151,10 +150,11 @@ export default {
           d.value == 0 ? "No Data" : (d.value * 100).toFixed(1) + "%"
         );
     },
+    // the idea of how to use tooltips was inspired by following 2 websites, but heavily changed to my own needs
+    // https://bl.ocks.org/d3noob/a22c42db65eb00d4e369
+    // https://www.d3-graph-gallery.com/graph/interactivity_tooltip.html
     initTooltip() {
       d3.select("#barTooltip").remove();
-      // the idea of how to use tooltips was inspired by this website, but heavily changed to my own needs
-      // https://bl.ocks.org/d3noob/a22c42db65eb00d4e369
       d3.select("body").append("div").attr("id", "barTooltip");
     },
     showTooltip(event) {
@@ -168,19 +168,11 @@ export default {
 
       const displayedText = `
         <b>${stateName}</b></br>
-       Extreme Poverty: ${
-         poverty == 0 ? "No Data" : `${poverty.toFixed(2)}%`
-       }</br>
-        Diabetes Prevelance: ${
-          diabetes == 0 ? "No Data" : diabetes.toFixed(1)
-        }%</br>
-        Cardiovascular Death Rate: ${
-          cardiovascular == 0 ? "No Data" : cardiovascular.toFixed(0)
-        }</br>
-        Share of Smokers: ${smokers == 0 ? "No Data" : smokers.toFixed(0)}%</br>
-        Human Development Index: ${
-          development == 0 ? "No Data" : development.toFixed(2)
-        }</br>`;
+       Extreme Poverty: ${this.dataOrInfo(poverty, 2)}%</br>
+        Diabetes Prevelance: ${this.dataOrInfo(diabetes, 1)}%</br>
+        Cardiovascular Death Rate: ${this.dataOrInfo(cardiovascular, 0)}</br>
+        Share of Smokers: ${this.dataOrInfo(smokers, 0)}%</br>
+        Human Development Index: ${this.dataOrInfo(development, 2)}</br>`;
 
       const div = d3.select("#barTooltip").style("opacity", 0);
       div.transition().duration(150).style("opacity", 0.95);
@@ -199,6 +191,10 @@ export default {
     hideTooltip() {
       const div = d3.select("#barTooltip").style("opacity", 0.95);
       div.transition().duration(300).style("opacity", 0);
+    },
+    dataOrInfo(data, decimalPlaces) {
+      const hasData = data != 0;
+      return hasData ? data.toFixed(decimalPlaces) : "No Data";
     },
   },
 
@@ -269,6 +265,7 @@ export default {
   opacity: 0;
   display: none;
 }
+
 .tooltip .tooltip-inner {
   max-width: 400px;
 }
