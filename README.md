@@ -1,18 +1,7 @@
 # Covid Dashboard - Assingment 5
 
-I used the provided boilerplate project to create this assignment, as well as components from my previous assignments. Other code-sources used are cited with comments inside the source code.
+Find the deployed version [here](https://wwwlab.cs.univie.ac.at/~simone99/VIS21W/A5/).
 
-## Run the project
-
-Install needed dependencies with:
-```
-yarn install
-```
-
-and run the project with:
-```
-yarn run serve
-```
 
 ### General Citations
 - I used following site to create a custom Geo Json for Europe: https://geojson-maps.ash.ms/
